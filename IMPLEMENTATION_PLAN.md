@@ -106,16 +106,18 @@
 
 ---
 
-### Step 9 — Messages Module
-- [ ] `messages.schema.ts`:
+### Step 9 — Messages Module ✅
+- [x] `messages.schema.ts`:
   - `GetMessagesSchema` — cursor (optional), limit (optional, default 50)
-- [ ] `messages.service.ts`:
+- [x] `messages.service.ts`:
   - `getRoomMessages(roomId, userId, cursor, limit)` — verify user was participant, paginated fetch ordered by createdAt desc
   - `deleteMessage(messageId, userId)` — verify sender is requester, soft or hard delete
   - `saveMessage(roomId, senderId, content, type)` — internal, called by socket chat handler
-- [ ] `messages.routes.ts`:
+- [x] `messages.routes.ts`:
   - `GET /api/rooms/:roomId/messages` → requireAuth + validate query → service.getRoomMessages
   - `DELETE /api/messages/:id` → requireAuth → service.deleteMessage
+- [x] `app.ts` — `messagesRouter` mounted at `/api`
+- [x] TypeScript clean — `tsc --noEmit` passes with zero errors
 
 ---
 
