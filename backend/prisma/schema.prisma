@@ -1,9 +1,102 @@
-// Full models defined in Step 3
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "mysql"
+}
+
+model User {
+  id           String        @id @default(uuid())
+  name         String
+  email        String        @unique
+  password     String
+  avatar       String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  sessions     Session[]
+  hostedRooms  Room[]        @relation("RoomHost")
+  participants Participant[]
+  messages     Message[]
+  invitations  Invitation[]  @relation("InvitationInviter")
+}
+
+model Session {
+  id        String   @id
+  userId    String?
+  data      Json
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Room {
+  id           String        @id @default(uuid())
+  code         String        @unique
+  name         String
+  hostId       String
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  host         User          @relation("RoomHost", fields: [hostId], references: [id])
+  participants Participant[]
+  messages     Message[]
+  invitations  Invitation[]
+
+  @@index([code])
+}
+
+model Participant {
+  id       String          @id @default(uuid())
+  userId   String
+  roomId   String
+  role     ParticipantRole @default(guest)
+  joinedAt DateTime        @default(now())
+  leftAt   DateTime?
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room     Room            @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([roomId])
+}
+
+enum ParticipantRole {
+  host
+  guest
+}
+
+model Message {
+  id        String      @id @default(uuid())
+  roomId    String
+  senderId  String
+  content   String      @db.Text
+  type      MessageType @default(text)
+  createdAt DateTime    @default(now())
+  room      Room        @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender    User        @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([roomId])
+}
+
+enum MessageType {
+  text
+  file
+}
+
+model Invitation {
+  id           String   @id @default(uuid())
+  roomId       String
+  invitedEmail String
+  inviterId    String
+  token        String   @unique
+  expiresAt    DateTime
+  accepted     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  room         Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  inviter      User     @relation("InvitationInviter", fields: [inviterId], references: [id], onDelete: Cascade)
+
+  @@index([token])
 }

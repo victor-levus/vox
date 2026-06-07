@@ -7,47 +7,34 @@
 
 ## Phase 1 — Foundation & Infrastructure
 
-### Step 1 — Project Scaffolding
-- [ ] Create `frontend/` with Vite + React + TypeScript (`npm create vite`)
-- [ ] Create `backend/` with Node.js + TypeScript (`npm init`)
-- [ ] Install all frontend dependencies:
-  - `react-router-dom`, `axios`, `socket.io-client`
-  - `@reduxjs/toolkit`, `react-redux`
-  - `react-icons`
-  - `tailwindcss`, `autoprefixer`, `postcss`
-  - `shadcn/ui` CLI + Radix UI primitives
-- [ ] Install all backend dependencies:
-  - `express`, `express-session`, `cookie-parser`, `cors`, `helmet`, `morgan`
-  - `prisma`, `@prisma/client`
-  - `zod`, `bcryptjs`, `nodemailer`
-  - `socket.io`
-  - `uuid`
-  - Dev: `typescript`, `ts-node-dev`, `@types/*`
-- [ ] Configure `tsconfig.json` for both frontend and backend
-- [ ] Configure `tailwind.config.ts` and `postcss.config.js`
-- [ ] Configure `shadcn/ui` via CLI (`components.json`)
-- [ ] Set up `eslint` + `prettier` for both
-- [ ] Create root `.env.example` with all required variables
-- [ ] Create root `.gitignore`
+### Step 1 — Project Scaffolding ✅
+- [x] Create `frontend/` with Vite + React + TypeScript
+- [x] Create `backend/` with Node.js + TypeScript
+- [x] Install all frontend dependencies (react-router-dom, axios, socket.io-client, @reduxjs/toolkit, react-redux, react-icons, tailwindcss v4, @tailwindcss/vite, shadcn/ui core packages)
+- [x] Install all backend dependencies (express, express-session, cookie-parser, cors, helmet, morgan, prisma 7, @prisma/client, @prisma/adapter-mariadb, zod, bcryptjs, nodemailer, socket.io, uuid)
+- [x] Configure `tsconfig.json` for both (backend includes `"types": ["node"]`)
+- [x] Configure Tailwind v4 — `@tailwindcss/vite` plugin, `@plugin` in CSS, `@config` directive
+- [x] Configure `shadcn/ui` (`components.json`, CSS variables, `src/lib/utils.ts`)
+- [x] Set up ESLint + Prettier for both
+- [x] Create root `.env.example` and `.gitignore`
+- [x] Full `src/` directory structure scaffolded (pages, store slices, services, hooks, types)
+- [x] Fixed Prisma 7 datasource: `url` moved to `prisma.config.ts`, `@prisma/adapter-mariadb` installed
 
 ---
 
-### Step 2 — Docker Compose Setup
-- [ ] `docker-compose.yml` with services:
-  - `db` — MySQL 8, named volume for persistence, health check
-  - `backend` — Node.js, depends on `db`, env-file
-  - `frontend` — Nginx, depends on `backend`
-  - `coturn` — TURN/STUN server for WebRTC NAT traversal
-- [ ] `backend/Dockerfile` — multi-stage: build TS → run JS
-- [ ] `frontend/Dockerfile` — multi-stage: Vite build → Nginx serve
-- [ ] `frontend/nginx.conf` — SPA routing (`try_files $uri /index.html`), gzip, proxy `/api` and `/socket.io` to backend
-- [ ] `.dockerignore` for both services
+### Step 2 — Docker Compose Setup ✅
+- [x] `docker-compose.yml` — 4 services: `db` (MySQL 8 + health check + named volume), `backend` (waits for db healthy), `frontend` (Nginx), `coturn` (host network for UDP)
+- [x] `backend/Dockerfile` — multi-stage: install + `prisma generate` + `tsc` → copy `dist/` + prod deps
+- [x] `frontend/Dockerfile` — multi-stage: Vite build with ARG-injected env vars → Nginx
+- [x] `frontend/nginx.conf` — SPA fallback, gzip, 1yr asset cache, `/api/` + `/socket.io/` proxy to backend
+- [x] `.dockerignore` for both services
+- [x] `coturn/turnserver.conf` — TURN server config with placeholder IP/credentials
 
 ---
 
-### Step 3 — Database Schema & Prisma Setup
-- [ ] Configure `prisma/schema.prisma` with MySQL provider
-- [ ] Define all models:
+### Step 3 — Database Schema & Prisma Setup ✅
+- [x] Configure `prisma/schema.prisma` with MySQL provider
+- [x] Define all models:
   ```
   User        — id, name, email, password, avatar, createdAt, updatedAt
   Session     — id (sid), userId, data (Json), expiresAt, createdAt, updatedAt
@@ -56,10 +43,13 @@
   Message     — id, roomId, senderId, content, type, createdAt
   Invitation  — id, roomId, invitedEmail, token (unique), expiresAt, accepted
   ```
-- [ ] Define all relations and indexes (Session.userId, Room.code, Invitation.token)
-- [ ] Run initial migration (`prisma migrate dev --name init`)
-- [ ] Write `prisma/seed.ts` — 2 test users + 1 sample room
-- [ ] Add `prisma db seed` script to `package.json`
+- [x] Define all relations and indexes (Session.userId, Room.code, Invitation.token)
+- [ ] Run initial migration (`npx prisma migrate dev --name init` from `backend/`) — requires DB up
+- [x] Write `prisma/seed.ts` — 2 test users + 1 sample room
+- [x] Add `prisma db seed` script to `package.json`
+- [x] `prisma.config.ts` — `import 'dotenv/config'` added as first import (Prisma 7 does not auto-load `.env`)
+- [x] `docker-compose.yml` db port remapped `3307:3306` (avoids conflict with local MySQL on 3306)
+- [x] `.env` + `backend/.env` created from `.env.example`
 
 ---
 

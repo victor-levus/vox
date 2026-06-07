@@ -9,7 +9,7 @@ services:
       MYSQL_USER: ${MYSQL_USER:-videocall}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-password}
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - db_data:/var/lib/mysql
     networks:

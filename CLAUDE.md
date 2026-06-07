@@ -236,3 +236,21 @@ cd backend && npx prisma studio
 - Socket events defined as constants in a shared `events.ts` file
 - No `any` types — strict TypeScript throughout
 - Tailwind only — no inline styles, no CSS modules
+
+---
+
+## Version Gotchas (learned during build)
+
+### Prisma 7.x
+- `url` is **NOT** in `schema.prisma` datasource block — put it in `prisma.config.ts` via `defineConfig({ datasource: { url: env('DATABASE_URL') } })`
+- `PrismaClient` requires a driver adapter — use `@prisma/adapter-mariadb` for MySQL; pass it as `new PrismaClient({ adapter })`
+- Never use `node:` protocol imports (e.g. `node:path`) — use plain `path`, `fs` etc. — `node:` requires `moduleResolution: node16` which conflicts with `commonjs`
+- Backend `tsconfig.json` must include `"types": ["node"]` explicitly
+
+### Tailwind CSS v4.x
+- PostCSS plugin moved to `@tailwindcss/postcss` — but for Vite projects use `@tailwindcss/vite` plugin instead
+- `vite.config.ts`: `plugins: [react(), tailwindcss()]` (import from `@tailwindcss/vite`)
+- `postcss.config.js`: only `autoprefixer` — remove `tailwindcss` entry
+- `src/index.css`: replace `@tailwind base/components/utilities` with `@import "tailwindcss"`
+- Load animate plugin via CSS: `@plugin "tailwindcss-animate"` — remove from `tailwind.config.ts` plugins array
+- Load JS config via CSS: `@config "../tailwind.config.ts"`
