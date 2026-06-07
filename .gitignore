@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build output
+dist/
+build/
+**/dist/
+
+# Environment files — never commit real secrets
+.env
+.env.local
+.env.*.local
+frontend/.env
+backend/.env
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Prisma
+backend/prisma/*.db
+backend/prisma/*.db-journal
+
+# TypeScript build info
+*.tsbuildinfo

@@ -1,0 +1,9 @@
+// Full models defined in Step 3
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
