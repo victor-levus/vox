@@ -161,24 +161,24 @@
 
 ## Phase 4 — Frontend Core
 
-### Step 13 — Frontend Base Setup
-- [ ] Install and init shadcn/ui components: Button, Input, Label, Avatar, Badge, Tooltip, Sheet, Dialog, DropdownMenu, Separator, Skeleton, Toaster
-- [ ] Configure React Router v6 with routes:
+### Step 13 — Frontend Base Setup ✅
+- [x] Install and init shadcn/ui components: Button, Input, Label, Avatar, Badge, Tooltip, Sheet, Dialog, DropdownMenu, Separator, Skeleton, Toaster (sonner)
+- [x] Configure React Router v6 with routes:
   - `/login`, `/register` — public
   - `/dashboard` — protected
   - `/lobby/:code` — protected
   - `/room/:code` — protected
   - `/invite/:token` — public
-- [ ] `<PrivateRoute>` — redirect to `/login` if no active session
-- [ ] Redux Toolkit store with slices:
+- [x] `<PrivateRoute>` — redirect to `/login` if no active session
+- [x] Redux Toolkit store with slices:
   - `authSlice` — user object, loading, error
   - `meetingSlice` — roomCode, roomName, isActive, isMuted, isCameraOff, isScreenSharing
   - `chatSlice` — messages array, unreadCount, isOpen
   - `participantsSlice` — participants array, raisedHands
   - `uiSlice` — activePanel (chat/participants/none), toasts, modals
-- [ ] `services/api.ts` — axios instance with `baseURL`, `withCredentials: true`, response interceptor for 401 → redirect to login
-- [ ] `services/socket.service.ts` — singleton Socket.io client, connect/disconnect helpers
-- [ ] `types/index.ts` — shared TS interfaces: `User`, `Room`, `Message`, `Participant`, `SocketEvents`
+- [x] `services/api.ts` — axios instance with `baseURL`, `withCredentials: true`, response interceptor for 401 → redirect to login
+- [x] `services/socket.service.ts` — singleton Socket.io client, connect/disconnect helpers
+- [x] `types/index.ts` — shared TS interfaces: `User`, `Room`, `Message`, `Participant`, `SocketEvents`
 
 ---
 
