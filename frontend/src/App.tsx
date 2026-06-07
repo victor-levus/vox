@@ -9,10 +9,16 @@ import DashboardPage from '@/pages/Dashboard/DashboardPage';
 import LobbyPage from '@/pages/Lobby/LobbyPage';
 import MeetingRoomPage from '@/pages/Meeting/MeetingRoomPage';
 import InviteLandingPage from '@/pages/Invite/InviteLandingPage';
+import { Toaster } from '@/components/ui/sonner';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAppSelector((s) => s.auth);
-  if (loading) return <div className="flex h-screen items-center justify-center">Loading...</div>;
+  if (loading)
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
   return user ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
@@ -58,6 +64,7 @@ export default function App() {
         />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Routes>
+      <Toaster richColors position="bottom-right" />
     </BrowserRouter>
   );
 }

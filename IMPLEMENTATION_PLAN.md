@@ -182,40 +182,43 @@
 
 ---
 
-### Step 14 — Auth Pages
-- [ ] `pages/Auth/LoginPage.tsx` — email + password form, error display, link to register, calls `POST /api/auth/login`, dispatches to authSlice, redirects to `/dashboard`
-- [ ] `pages/Auth/RegisterPage.tsx` — name + email + password + confirm form, calls `POST /api/auth/register`, auto-login on success
-- [ ] On app load: call `GET /api/auth/me` to hydrate auth state if session cookie exists
-- [ ] Loading state while session check is in flight (full-page spinner)
-- [ ] Form validation with react-hook-form + Zod (`zodResolver`)
+### Step 14 — Auth Pages ✅
+- [x] `pages/Auth/LoginPage.tsx` — email + password form, error display, link to register, calls `POST /api/auth/login`, dispatches to authSlice, redirects to `/dashboard`
+- [x] `pages/Auth/RegisterPage.tsx` — name + email + password + confirm form, calls `POST /api/auth/register`, auto-login on success
+- [x] On app load: call `GET /api/auth/me` to hydrate auth state if session cookie exists (App.tsx useEffect)
+- [x] Loading state while session check is in flight (full-page spinner — animated border-primary ring)
+- [x] Form validation with react-hook-form + Zod (`zodResolver`)
 
 ---
 
-### Step 15 — Dashboard / Home Page
-- [ ] `pages/Dashboard/DashboardPage.tsx`:
-  - Header with user avatar, name, logout button
+### Step 15 — Dashboard / Home Page ✅
+- [x] `pages/Dashboard/DashboardPage.tsx`:
+  - Header with user avatar (initials fallback), name, logout button
   - "New Meeting" button → `POST /api/rooms` → navigate to `/lobby/:code`
   - "Join Meeting" input + button → navigate to `/lobby/:code`
-  - "My Meetings" list from `GET /api/rooms/my`:
-    - Room name, date, participant count
-    - "Start" / "Copy Link" / "Invite" actions per room
-- [ ] Copy invite link to clipboard with toast confirmation
-- [ ] Empty state when no rooms yet
+  - "My Meetings" list from `GET /api/rooms/my` with Skeleton loading state
+    - Room name, formatted date, participant count via `_count`
+    - "Start" / DropdownMenu (Copy Link, Invite placeholder, Delete) per room
+    - Live badge when `room.isActive`
+- [x] Copy lobby link to clipboard with sonner toast confirmation
+- [x] Empty state with dashed border + icon when no rooms
+- [x] `<Toaster richColors />` added to App.tsx (available app-wide)
 
 ---
 
 ## Phase 5 — Meeting Room
 
-### Step 16 — Lobby / Pre-join Screen
-- [ ] `pages/Lobby/LobbyPage.tsx`:
-  - Fetch room info via `GET /api/rooms/:code` (404 redirect if invalid)
-  - Camera preview tile using `getUserMedia({ video: true, audio: true })`
-  - Toggle camera and microphone before joining
-  - Display name field (pre-filled from auth user)
-  - Device selectors for camera and microphone
-  - "Join Now" button → navigate to `/room/:code`
-  - If room not yet started by host: "Waiting for host…" state
-- [ ] Stop all preview tracks on unmount
+### Step 16 — Lobby / Pre-join Screen ✅
+- [x] `pages/Lobby/LobbyPage.tsx`:
+  - Fetch room info via `GET /api/rooms/:code` (404 → toast + redirect to /dashboard)
+  - Camera preview tile using `getUserMedia({ video, audio })` with mirrored video (`transform-[scaleX(-1)]`)
+  - Toggle camera (stops tracks / restarts stream) and microphone (track.enabled toggle)
+  - Display name field pre-filled from auth user
+  - Device selectors (native `<select>`) for camera and microphone — populated after permission granted
+  - "Join Now" button → navigate to `/room/:code`; disabled when name is empty
+  - "Waiting for host" message shown when current user is not the host
+  - Camera-off state shows avatar initials; mediaError state shows icon + text
+- [x] Cleanup: `useEffect` return stops all tracks via `streamRef` on unmount
 
 ---
 
