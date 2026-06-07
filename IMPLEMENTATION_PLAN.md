@@ -222,27 +222,26 @@
 
 ---
 
-### Step 17 — WebRTC & Media Hooks
-- [ ] `hooks/useMedia.ts`:
-  - Acquire local `MediaStream` with `getUserMedia`
-  - `toggleAudio()` — enable/disable audio track
-  - `toggleVideo()` — enable/disable video track
-  - `startScreenShare()` — `getDisplayMedia`, returns screen stream
-  - `stopScreenShare()` — stop screen tracks, revert to camera
-  - Return: `localStream`, `isAudioEnabled`, `isVideoEnabled`, `isScreenSharing`
-- [ ] `hooks/useWebRTC.ts`:
-  - Manage `Map<socketId, RTCPeerConnection>`
-  - On `user-joined`: create offer, send via socket
-  - On `offer`: create answer, send via socket
-  - On `answer`: set remote description
-  - On `ice-candidate`: add ICE candidate
-  - On `user-left`: close and remove peer connection
-  - ICE servers from env (STUN + TURN)
-  - Return: `remoteStreams: Map<socketId, MediaStream>`, `peers`
-- [ ] `hooks/useSocket.ts`:
-  - Connect on mount, disconnect on unmount
-  - Emit `join-room` with roomCode + userId on connect
-  - Re-export typed event emitters and listeners
+### Step 17 — WebRTC & Media Hooks ✅
+- [x] `hooks/useMedia.ts`:
+  - `getUserMedia({ video, audio })` on mount; cleanup stops all tracks on unmount
+  - `toggleAudio()` / `toggleVideo()` — functional setState to avoid stale closure, flips `track.enabled`
+  - `startScreenShare()` — `getDisplayMedia`; sets `track.onended` to auto-revert on browser stop button
+  - `stopScreenShare()` — stop screen tracks, restore camera stream from `cameraStreamRef`
+  - `useCallback` on all methods (stable refs for toolbar props)
+- [x] `hooks/useWebRTC.ts`:
+  - `PARTICIPANT_LIST` → joiner creates offers to all existing peers (joiner-initiates mesh)
+  - `OFFER` → existing peer creates RTCPeerConnection + answer; flushes queued ICE candidates
+  - `ANSWER` → joiner sets remote description; flushes queued ICE candidates
+  - `ICE_CANDIDATE` → added immediately if remoteDescription set, else queued per peer
+  - `USER_LEFT` → `removePeer`: close PC, delete from map, remove remote stream
+  - `onconnectionstatechange` → auto-remove failed/closed connections
+  - ICE servers (STUN + optional TURN) built from env at module load
+- [x] `hooks/useSocket.ts`:
+  - `socketService.connect()` on mount; emits `JOIN_ROOM` on connect (or immediately if already connected)
+  - Emits `LEAVE_ROOM` + `socketService.disconnect()` on unmount
+  - Returns `Socket | null` for use by `useWebRTC` and `useChat`
+- [x] `src/vite-env.d.ts` — typed `ImportMetaEnv` for all `VITE_*` env vars
 
 ---
 
