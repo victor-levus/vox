@@ -70,20 +70,12 @@
 
 ---
 
-### Step 5 — Auth Module
-- [ ] `auth.schema.ts`:
-  - `RegisterSchema` — name, email, password (min 8), confirmPassword
-  - `LoginSchema` — email, password
-- [ ] `auth.service.ts`:
-  - `register(data)` — check duplicate email, hash password, create User, create session
-  - `login(data, session)` — verify credentials, bcrypt compare, set `session.userId`, return user (no password)
-  - `logout(session)` — destroy session, delete Session row from DB
-  - `getMe(userId)` — fetch user by id, strip password
-- [ ] `auth.routes.ts`:
-  - `POST /api/auth/register` → validate(RegisterSchema) → service.register
-  - `POST /api/auth/login` → validate(LoginSchema) → service.login
-  - `POST /api/auth/logout` → requireAuth → service.logout
-  - `GET /api/auth/me` → requireAuth → service.getMe
+### Step 5 — Auth Module ✅
+- [x] `auth.schema.ts` — `RegisterSchema` (name, email, password min 8, confirmPassword with `.refine` equality check) + `LoginSchema`
+- [x] `auth.service.ts` — register (409 on duplicate), login (401 on bad creds, bcrypt 12 rounds), logout (session.destroy), getMe; password never returned (Prisma `select` or destructure)
+- [x] `auth.routes.ts` — POST /register, POST /login, POST /logout, GET /me; all use `asyncHandler`
+- [x] `app.ts` — `authRouter` imported and mounted at `/api/auth`
+- [x] TypeScript clean — `tsc --noEmit` passes with zero errors
 
 ---
 

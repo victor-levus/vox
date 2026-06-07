@@ -8,6 +8,7 @@ import session from 'express-session';
 import { config } from './config/env';
 import { PrismaSessionStore } from './config/sessionStore';
 import { errorHandler } from './middleware/error.middleware';
+import authRouter from './modules/auth/auth.routes';
 
 const app = express();
 
@@ -36,8 +37,9 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-// Module routers mounted in Steps 5–9:
-// app.use('/api/auth', authRouter);
+app.use('/api/auth', authRouter);
+
+// Module routers mounted in Steps 6–9:
 // app.use('/api/users', usersRouter);
 // app.use('/api/rooms', roomsRouter);
 // app.use('/api/invitations', invitationsRouter);
