@@ -136,22 +136,26 @@
 
 ---
 
-### Step 11 — WebRTC Signaling Handler
-- [ ] `websocket/handlers/signaling.handler.ts`:
-  - `offer` — relay `{ sdp, targetSocketId }` to target peer
-  - `answer` — relay `{ sdp, targetSocketId }` to target peer
-  - `ice-candidate` — relay `{ candidate, targetSocketId }` to target peer
-  - On `user-joined`: send new peer the list of existing socket IDs so they initiate offers to each (mesh topology)
-- [ ] All relay events include the sender's `socketId` so the receiver knows who to answer
+### Step 11 — WebRTC Signaling Handler ✅
+- [x] `websocket/handlers/signaling.handler.ts` — pure relay, no DB:
+  - `offer` — relays `{ sdp }` to `targetSocketId`, appends `fromSocketId: socket.id`
+  - `answer` — same pattern
+  - `ice-candidate` — relays `{ candidate }` to `targetSocketId`, appends `fromSocketId`
+- [x] Mesh topology bootstrap already handled by room.handler `PARTICIPANT_LIST` — joiner receives all current socketIds and initiates offers
+- [x] `socket.ts` — `registerSignalingHandlers` added to connection handler
+- [x] TypeScript clean — `tsc --noEmit` passes with zero errors
 
 ---
 
-### Step 12 — Real-time Chat Handler
-- [ ] `websocket/handlers/chat.handler.ts`:
-  - `send-message` — validate content, call `messages.service.saveMessage()`, broadcast `new-message` to room with full message object (id, sender info, content, type, createdAt)
-  - `typing` — broadcast `user-typing { userId, name }` to room (excluding sender)
-  - `stop-typing` — broadcast `user-stop-typing { userId }` to room
-- [ ] Define all socket event name constants in `websocket/events.ts` (imported by both handlers and frontend)
+### Step 12 — Real-time Chat Handler ✅
+- [x] `websocket/handlers/chat.handler.ts`:
+  - `send-message` — trims content, resolves roomId via DB, calls `saveMessage()`, broadcasts `new-message` to whole room (sender included, so they get the persisted ID/createdAt)
+  - `typing` — reads member name from in-memory map (no DB hit), broadcasts `user-typing { userId, name }` to room excluding sender
+  - `stop-typing` — broadcasts `user-stop-typing { userId }` to room excluding sender
+- [x] `room.handler.ts` — exported `getSocketMember(socketId)` helper used by chat handler
+- [x] `websocket/events.ts` — already complete; all constants used by all handlers and available for frontend
+- [x] `socket.ts` — `registerChatHandlers` added to connection handler
+- [x] TypeScript clean — `tsc --noEmit` passes with zero errors
 
 ---
 

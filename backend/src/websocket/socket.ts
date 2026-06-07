@@ -4,6 +4,8 @@ import { Server } from 'socket.io';
 import { config } from '../config/env';
 import { sessionMiddleware } from '../config/session';
 import { registerRoomHandlers } from './handlers/room.handler';
+import { registerSignalingHandlers } from './handlers/signaling.handler';
+import { registerChatHandlers } from './handlers/chat.handler';
 
 export function initSocket(httpServer: http.Server): Server {
   const io = new Server(httpServer, {
@@ -29,7 +31,8 @@ export function initSocket(httpServer: http.Server): Server {
 
   io.on('connection', (socket) => {
     registerRoomHandlers(io, socket);
-    // signaling and chat handlers registered in Steps 11–12
+    registerSignalingHandlers(io, socket);
+    registerChatHandlers(io, socket);
   });
 
   return io;

@@ -14,6 +14,12 @@ const rooms = new Map<string, Map<string, RoomMember>>();
 // socketId → roomCode (for fast disconnect cleanup)
 const socketToRoom = new Map<string, string>();
 
+export function getSocketMember(socketId: string): RoomMember | undefined {
+  const roomCode = socketToRoom.get(socketId);
+  if (!roomCode) return undefined;
+  return rooms.get(roomCode)?.get(socketId);
+}
+
 function getMembers(roomCode: string): RoomMember[] {
   return Array.from(rooms.get(roomCode)?.values() ?? []);
 }
