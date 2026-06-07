@@ -10,7 +10,7 @@ A full-featured video calling web application (like Google Meet / Microsoft Team
 
 ### Frontend
 - **React 18 + Vite + TypeScript**
-- **Tailwind CSS** — utility-first styling
+- **Tailwind CSS v4** — utility-first styling via `@tailwindcss/vite` Vite plugin (NOT PostCSS plugin)
 - **shadcn/ui** (built on Radix UI) — accessible component primitives
 - **react-icons** — icon library
 - **Redux Toolkit** — global state management
