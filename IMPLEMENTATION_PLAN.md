@@ -88,19 +88,12 @@
 
 ---
 
-### Step 7 — Rooms Module
-- [ ] `rooms.schema.ts`:
-  - `CreateRoomSchema` — name (optional, defaults to "My Meeting")
-- [ ] `rooms.service.ts`:
-  - `createRoom(userId, data)` — generate unique 10-char alphanumeric code, create Room with hostId
-  - `getRoomByCode(code)` — fetch room + host info, 404 if not found
-  - `getMyRooms(userId)` — rooms where user is host or Participant, ordered by latest
-  - `endRoom(roomId, userId)` — verify requester is host, set isActive=false
-- [ ] `rooms.routes.ts`:
-  - `POST /api/rooms` → requireAuth + validate → service.createRoom
-  - `GET /api/rooms/my` → requireAuth → service.getMyRooms
-  - `GET /api/rooms/:code` → requireAuth → service.getRoomByCode
-  - `DELETE /api/rooms/:id` → requireAuth → service.endRoom
+### Step 7 — Rooms Module ✅
+- [x] `rooms.schema.ts` — `CreateRoomSchema` with `.default('My Meeting')`
+- [x] `rooms.service.ts` — `uniqueCode()` generates collision-free 10-char alphanumeric code; `ROOM_SELECT` includes `host` sub-select; `getMyRooms` queries host OR participant with `_count`; `endRoom` 403 if not host
+- [x] `rooms.routes.ts` — POST /, GET /my, GET /:code, DELETE /:id; params cast via `as { code: string }` (Express 5 types params as `string | string[]`)
+- [x] `app.ts` — `roomsRouter` mounted at `/api/rooms`
+- [x] TypeScript clean — `tsc --noEmit` passes with zero errors
 
 ---
 

@@ -10,6 +10,7 @@ import { PrismaSessionStore } from './config/sessionStore';
 import { errorHandler } from './middleware/error.middleware';
 import authRouter from './modules/auth/auth.routes';
 import usersRouter from './modules/users/users.routes';
+import roomsRouter from './modules/rooms/rooms.routes';
 
 const app = express();
 
@@ -40,10 +41,9 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
+app.use('/api/rooms', roomsRouter);
 
-// Module routers mounted in Steps 7–9:
-// app.use('/api/rooms', roomsRouter);
-// app.use('/api/rooms', roomsRouter);
+// Module routers mounted in Steps 8–9:
 // app.use('/api/invitations', invitationsRouter);
 // app.use('/api', messagesRouter);
 
