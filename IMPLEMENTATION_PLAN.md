@@ -97,17 +97,12 @@
 
 ---
 
-### Step 8 — Invitations Module
-- [ ] `invitations.schema.ts`:
-  - `CreateInvitationSchema` — roomId, emails (array of email strings), sendEmail (boolean)
-- [ ] `invitations.service.ts`:
-  - `createInvitations(data, hostId)` — generate UUID token per email, save Invitation rows, optionally send emails via nodemailer
-  - `resolveInvitation(token)` — look up token, check not expired/accepted, return room + inviter info
-  - `acceptInvitation(token, userId)` — mark accepted=true, return room code for redirect
-- [ ] `invitations.routes.ts`:
-  - `POST /api/invitations` → requireAuth + validate → service.createInvitations
-  - `GET /api/invitations/:token` → service.resolveInvitation (public, no auth — landing page)
-  - `POST /api/invitations/:token/accept` → requireAuth → service.acceptInvitation
+### Step 8 — Invitations Module ✅
+- [x] `invitations.schema.ts` — `CreateInvitationSchema`: roomId, emails array of email strings, sendEmail boolean with `.default(false)`
+- [x] `invitations.service.ts` — `createInvitations`: 403 if not host, UUID token per email, 7-day TTL, optional nodemailer send via `Promise.allSettled` (failures don't abort); `resolveInvitation`: 410 on expired/accepted; `acceptInvitation`: marks accepted, returns roomCode
+- [x] `invitations.routes.ts` — POST /, GET /:token (public), POST /:token/accept; params cast via `as { token: string }`
+- [x] `app.ts` — `invitationsRouter` mounted at `/api/invitations`
+- [x] TypeScript clean — `tsc --noEmit` passes with zero errors
 
 ---
 

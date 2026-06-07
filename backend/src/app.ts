@@ -11,6 +11,7 @@ import { errorHandler } from './middleware/error.middleware';
 import authRouter from './modules/auth/auth.routes';
 import usersRouter from './modules/users/users.routes';
 import roomsRouter from './modules/rooms/rooms.routes';
+import invitationsRouter from './modules/invitations/invitations.routes';
 
 const app = express();
 
@@ -42,9 +43,9 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/rooms', roomsRouter);
+app.use('/api/invitations', invitationsRouter);
 
-// Module routers mounted in Steps 8–9:
-// app.use('/api/invitations', invitationsRouter);
+// Module routers mounted in Step 9:
 // app.use('/api', messagesRouter);
 
 app.use(errorHandler);
