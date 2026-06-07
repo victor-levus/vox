@@ -245,23 +245,22 @@
 
 ---
 
-### Step 18 — Meeting Room Page & Video Grid
-- [ ] `pages/Meeting/MeetingRoomPage.tsx` — orchestrates all hooks, renders grid + toolbar + panels
-- [ ] `components/meeting/VideoGrid.tsx`:
-  - Responsive CSS grid layouts by participant count:
-    - 1 → full screen
-    - 2 → side by side
-    - 3–4 → 2×2
-    - 5–9 → 3×3
-    - 9+ → scrollable grid
-  - Featured/spotlight tile for pinned or screen-sharing participant
-- [ ] `components/meeting/VideoTile.tsx`:
-  - Renders `<video>` element with `srcObject = stream`
-  - Name label overlay
-  - Audio level indicator (animated ring)
-  - Camera-off fallback (avatar + name)
-  - "You" badge on local tile
-  - Pin button on hover
+### Step 18 — Meeting Room Page & Video Grid ✅
+- [x] `pages/Meeting/MeetingRoomPage.tsx`:
+  - Orchestrates useMedia + useSocket + useWebRTC hooks
+  - Fetches room via getRoomByCode; dispatches joinMeeting / cleanup on unmount
+  - `roomRef` holds room id/hostId for socket participant role assignment
+  - Separate socket useEffect maps PARTICIPANT_LIST / USER_JOINED / USER_LEFT → Redux participantsSlice
+  - Minimal toolbar (mic, camera, leave) — full toolbar added in Step 19
+- [x] `components/meeting/VideoGrid.tsx`:
+  - Builds `TileData[]` from local + remoteStreams (keyed by socketId, matched to Redux participants for name/state)
+  - Grid layout: 1→1col, 2→2col, 3-4→2col, 5-9→3col, 9+→4col scrollable
+  - Spotlight layout when a tile is pinned: large primary tile + horizontal strip of others
+- [x] `components/meeting/VideoTile.tsx`:
+  - `srcObject` set imperatively via `useRef<HTMLVideoElement>` in `useEffect`
+  - Local video mirrored via `transform-[scaleX(-1)]`, muted to prevent echo
+  - Camera-off fallback: avatar initials; gradient + name overlay
+  - "You" badge, muted icon (destructive bg), pin/unpin button on group-hover
 
 ---
 

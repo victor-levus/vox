@@ -50,7 +50,7 @@ export function registerRoomHandlers(io: Server, socket: Socket): void {
     }
   }
 
-  socket.on(SocketEvents.JOIN_ROOM, async (roomCode: string) => {
+  socket.on(SocketEvents.JOIN_ROOM, async ({ roomCode }: { roomCode: string }) => {
     const room = await prisma.room.findUnique({
       where: { code: roomCode },
       select: { id: true, hostId: true },
@@ -81,8 +81,9 @@ export function registerRoomHandlers(io: Server, socket: Socket): void {
 
     await socket.join(roomCode);
 
-    // Send full participant list to the new joiner (includes socketIds for WebRTC mesh)
-    socket.emit(SocketEvents.PARTICIPANT_LIST, getMembers(roomCode));
+    // Send existing participants to the joiner (exclude self — joiner initiates WebRTC offers to these)
+    const others = getMembers(roomCode).filter((m) => m.socketId !== socket.id);
+    socket.emit(SocketEvents.PARTICIPANT_LIST, { participants: others });
 
     // Notify everyone else of the new joiner
     socket.to(roomCode).emit(SocketEvents.USER_JOINED, member);
