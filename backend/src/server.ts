@@ -1,17 +1,12 @@
 import 'dotenv/config';
 import http from 'http';
-import { Server as SocketServer } from 'socket.io';
 import app from './app';
 import { config } from './config/env';
+import { initSocket } from './websocket/socket';
 
 const server = http.createServer(app);
 
-export const io = new SocketServer(server, {
-  cors: { origin: config.CLIENT_URL, credentials: true },
-});
-
-// Socket.io handlers registered in Step 10:
-// initSocket(io);
+export const io = initSocket(server);
 
 server.listen(config.PORT, () => {
   console.log(`Server listening on port ${config.PORT} [${config.NODE_ENV}]`);

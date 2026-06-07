@@ -123,17 +123,16 @@
 
 ## Phase 3 — WebSocket & WebRTC Signaling
 
-### Step 10 — Socket.io Server & Room Events
-- [ ] `websocket/socket.ts`:
-  - Initialize Socket.io on HTTP server with CORS config
-  - Auth middleware on handshake: parse session cookie → look up Session in DB → attach `socket.data.userId`
-  - Reject unauthenticated connections with `401`
-  - Register all handlers per socket
-- [ ] `websocket/handlers/room.handler.ts`:
-  - `join-room` — validate room exists, create/update Participant row, socket joins room channel, emit `user-joined` to room with participant list
-  - `leave-room` — update Participant.leftAt, socket leaves channel, emit `user-left` to room
-  - `disconnect` — auto-trigger leave-room logic
-  - In-memory Map tracking `roomCode → Set<socketId>` for fast participant lookup
+### Step 10 — Socket.io Server & Room Events ✅
+- [x] `src/config/session.ts` — extracted shared session middleware (used by both Express and Socket.io)
+- [x] `websocket/socket.ts` — `initSocket(httpServer)`: creates Server, two-phase auth middleware (session via express-session → reject if no userId), registers room handlers; exported io via server.ts
+- [x] `websocket/handlers/room.handler.ts`:
+  - `join-room` — validate room exists, upsert Participant row (create if no active record), join socket channel, emit `participant-list` to joiner (with socketIds for WebRTC mesh), emit `user-joined` to rest
+  - `leave-room` — remove from in-memory map, emit `user-left`, update Participant.leftAt in DB
+  - `disconnect` — reuses leaveRoom() logic
+  - In-memory `rooms: Map<roomCode, Map<socketId, RoomMember>>` + `socketToRoom` map for O(1) cleanup
+- [x] `server.ts` — calls `initSocket(server)`, exports `io`
+- [x] TypeScript clean — `tsc --noEmit` passes with zero errors
 
 ---
 

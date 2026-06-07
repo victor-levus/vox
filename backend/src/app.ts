@@ -4,9 +4,8 @@ import helmet from 'helmet';
 import cors from 'cors';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
-import session from 'express-session';
 import { config } from './config/env';
-import { PrismaSessionStore } from './config/sessionStore';
+import { sessionMiddleware } from './config/session';
 import { errorHandler } from './middleware/error.middleware';
 import authRouter from './modules/auth/auth.routes';
 import usersRouter from './modules/users/users.routes';
@@ -21,21 +20,7 @@ app.use(cors({ origin: config.CLIENT_URL, credentials: true }));
 app.use(morgan(config.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json());
 app.use(cookieParser());
-app.use(
-  session({
-    store: new PrismaSessionStore(),
-    secret: config.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    name: 'connect.sid',
-    cookie: {
-      httpOnly: true,
-      secure: config.SESSION_COOKIE_SECURE,
-      sameSite: config.SESSION_COOKIE_SAME_SITE,
-      maxAge: config.SESSION_MAX_AGE_MS,
-    },
-  }),
-);
+app.use(sessionMiddleware);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
