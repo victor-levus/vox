@@ -55,20 +55,18 @@
 
 ## Phase 2 — Backend Core
 
-### Step 4 — Express App Bootstrap
-- [ ] `src/app.ts` — configure middleware stack:
-  - `helmet()`, `cors({ origin: CLIENT_URL, credentials: true })`, `morgan()`
-  - `express.json()`, `cookie-parser()`
-  - `express-session` with Prisma session store, cookie options from env
-- [ ] `src/config/env.ts` — parse and validate all env vars with Zod, export typed config object
-- [ ] `src/config/prisma.ts` — singleton PrismaClient export
-- [ ] `src/utils/asyncHandler.ts` — wraps async route handlers, forwards errors to next()
-- [ ] `src/middleware/auth.middleware.ts` — checks `req.session.userId`, returns 401 if absent
-- [ ] `src/middleware/validate.middleware.ts` — accepts a Zod schema, validates `req.body` / `req.params` / `req.query`, returns 400 with formatted errors
-- [ ] `src/middleware/error.middleware.ts` — global Express error handler, formats error responses
-- [ ] `src/server.ts` — create HTTP server, attach Socket.io, listen on PORT
-- [ ] Mount health check: `GET /api/health → 200 { status: "ok" }`
-- [ ] Mount all module routers under `/api`
+### Step 4 — Express App Bootstrap ✅
+- [x] `src/config/env.ts` — Zod env validation, typed `config` singleton; exits on invalid vars
+- [x] `src/config/sessionStore.ts` — custom `PrismaSessionStore` (get/set/destroy/touch)
+- [x] `src/config/prisma.ts` — singleton PrismaClient with `@prisma/adapter-mariadb`
+- [x] `src/types/express.d.ts` — `declare module 'express-session'` adds `userId` to `SessionData`
+- [x] `src/utils/asyncHandler.ts` — wraps async handlers, forwards errors to next()
+- [x] `src/middleware/auth.middleware.ts` — `requireAuth`: checks `req.session.userId`, 401 if absent
+- [x] `src/middleware/validate.middleware.ts` — `validate(schema, target?)`: Zod parse on body/params/query, 400 on failure
+- [x] `src/middleware/error.middleware.ts` — `errorHandler` + `AppError` class
+- [x] `src/app.ts` — helmet, cors, morgan, json, cookie-parser, session middleware; `GET /api/health`; module router stubs commented in
+- [x] `src/server.ts` — HTTP server + Socket.io init (CORS); handlers stubbed for Step 10
+- [x] TypeScript clean — `tsc --noEmit` passes with zero errors
 
 ---
 
