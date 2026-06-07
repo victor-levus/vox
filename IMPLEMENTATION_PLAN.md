@@ -79,20 +79,12 @@
 
 ---
 
-### Step 6 — Users Module
-- [ ] `users.schema.ts`:
-  - `UpdateProfileSchema` — name (optional), avatar (optional URL)
-  - `ChangePasswordSchema` — currentPassword, newPassword (min 8), confirmPassword
-- [ ] `users.service.ts`:
-  - `getProfile(userId)` — fetch user, strip password
-  - `updateProfile(userId, data)` — update name/avatar
-  - `changePassword(userId, data)` — verify current password, hash new, update
-  - `searchUsers(query)` — search by name or email (for invite flow), return max 10 results
-- [ ] `users.routes.ts`:
-  - `GET /api/users/profile` → requireAuth → service.getProfile
-  - `PUT /api/users/profile` → requireAuth + validate → service.updateProfile
-  - `PUT /api/users/password` → requireAuth + validate → service.changePassword
-  - `GET /api/users/search?q=` → requireAuth → service.searchUsers
+### Step 6 — Users Module ✅
+- [x] `users.schema.ts` — `UpdateProfileSchema` (name/avatar optional), `ChangePasswordSchema` (with `.refine` match check)
+- [x] `users.service.ts` — getProfile, updateProfile, changePassword (bcrypt verify + 12-round hash), searchUsers (OR name/email contains, take 10); password never returned via `select`
+- [x] `users.routes.ts` — GET /profile, PUT /profile, PUT /password, GET /search?q=; all behind `requireAuth`
+- [x] `app.ts` — `usersRouter` mounted at `/api/users`
+- [x] TypeScript clean — `tsc --noEmit` passes with zero errors
 
 ---
 

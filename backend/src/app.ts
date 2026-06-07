@@ -9,6 +9,7 @@ import { config } from './config/env';
 import { PrismaSessionStore } from './config/sessionStore';
 import { errorHandler } from './middleware/error.middleware';
 import authRouter from './modules/auth/auth.routes';
+import usersRouter from './modules/users/users.routes';
 
 const app = express();
 
@@ -38,9 +39,10 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/auth', authRouter);
+app.use('/api/users', usersRouter);
 
-// Module routers mounted in Steps 6–9:
-// app.use('/api/users', usersRouter);
+// Module routers mounted in Steps 7–9:
+// app.use('/api/rooms', roomsRouter);
 // app.use('/api/rooms', roomsRouter);
 // app.use('/api/invitations', invitationsRouter);
 // app.use('/api', messagesRouter);
