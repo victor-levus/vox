@@ -8,7 +8,6 @@ interface UiState {
   meetingLayout: MeetingLayout;
   isSettingsOpen: boolean;
   isInviteOpen: boolean;
-  isChatOpen: boolean;
 }
 
 const initialState: UiState = {
@@ -16,7 +15,6 @@ const initialState: UiState = {
   meetingLayout: 'grid',
   isSettingsOpen: false,
   isInviteOpen: false,
-  isChatOpen: false,
 };
 
 const uiSlice = createSlice({
@@ -35,11 +33,8 @@ const uiSlice = createSlice({
     toggleInvite(state) {
       state.isInviteOpen = !state.isInviteOpen;
     },
-    toggleChat(state) {
-      state.isChatOpen = !state.isChatOpen;
-    },
   },
 });
 
-export const { setTheme, setMeetingLayout, toggleSettings, toggleInvite, toggleChat } = uiSlice.actions;
+export const { setTheme, setMeetingLayout, toggleSettings, toggleInvite } = uiSlice.actions;
 export default uiSlice.reducer;

@@ -251,101 +251,102 @@
   - Fetches room via getRoomByCode; dispatches joinMeeting / cleanup on unmount
   - `roomRef` holds room id/hostId for socket participant role assignment
   - Separate socket useEffect maps PARTICIPANT_LIST / USER_JOINED / USER_LEFT → Redux participantsSlice
-  - Minimal toolbar (mic, camera, leave) — full toolbar added in Step 19
 - [x] `components/meeting/VideoGrid.tsx`:
   - Builds `TileData[]` from local + remoteStreams (keyed by socketId, matched to Redux participants for name/state)
   - Grid layout: 1→1col, 2→2col, 3-4→2col, 5-9→3col, 9+→4col scrollable
   - Spotlight layout when a tile is pinned: large primary tile + horizontal strip of others
 - [x] `components/meeting/VideoTile.tsx`:
   - `srcObject` set imperatively via `useRef<HTMLVideoElement>` in `useEffect`
-  - Local video mirrored via `transform-[scaleX(-1)]`, muted to prevent echo
+  - Local video mirrored via `scale-x-[-1]` (Tailwind v4); `muted` set via inline ref callback (not JSX prop — React bug)
   - Camera-off fallback: avatar initials; gradient + name overlay
   - "You" badge, muted icon (destructive bg), pin/unpin button on group-hover
+- [x] Bug fixes: `getUserMedia` errors logged; Vite proxy `ECONNABORTED` suppressed via custom logger
 
 ---
 
-### Step 19 — Meeting Controls Toolbar
-- [ ] `components/meeting/Toolbar.tsx` — fixed bottom bar with:
-  - Mute / Unmute mic (with active audio level animation)
-  - Camera on / off
-  - Screen share toggle
-  - Chat toggle (with unread badge)
-  - Participants toggle (with count badge)
-  - Reactions picker (emoji grid popup)
-  - Raise hand toggle
-  - Settings button (opens Settings modal)
-  - Leave call / End for all (host gets "End for all" option)
-- [ ] Call duration timer (counts up from join time)
-- [ ] Mic and camera device quick-selector dropdown (via `enumerateDevices`)
+### Step 19 — Meeting Controls Toolbar ✅
+- [x] `components/meeting/Controls.tsx` — three-zone fixed bottom bar:
+  - Left spacer (reserved for future: reactions, timer)
+  - Center: mic toggle (red when muted), camera toggle (red when off), screen share toggle (blue when sharing), Leave button
+  - Right: chat panel toggle + participants panel toggle (ghost → neutral when panel open)
+  - Unread message badge on chat button (blue dot, `9+` cap) when panel is closed
+- [x] `components/meeting/ParticipantsPanel.tsx` — fixed 288px right side panel:
+  - Driven by `participantsSlice.isOpen` / `togglePanel`
+  - Shows each participant: avatar initials, name, host badge, mic + camera status icons (destructive when off)
+- [x] `store/slices/participantsSlice.ts` — `togglePanel` + `updateParticipant` already in place
+- [x] `hooks/useWebRTC.ts` — `localStream` effect auto-replaces video track on all active peers (screen share propagation)
 
 ---
 
-### Step 20 — Chat Panel
-- [ ] `components/chat/ChatPanel.tsx` — Sheet (slide-in) component:
-  - Message history loaded from `GET /api/rooms/:roomId/messages` on open
-  - Real-time messages appended via socket `new-message` event
-  - Scroll-to-bottom on new messages
-  - Unread count badge cleared on open
-- [ ] `components/chat/MessageBubble.tsx`:
-  - Own messages right-aligned (primary color)
-  - Others left-aligned (neutral)
-  - Sender name + avatar for others
-  - Timestamp
-  - File attachment display
-- [ ] `components/chat/ChatInput.tsx`:
-  - Text input, send on Enter (Shift+Enter for newline)
-  - Emoji picker button
-  - File attachment button
-  - Typing indicator shown above input when others are typing
+### Step 20 — Chat Panel ✅
+- [x] `hooks/useChat.ts`:
+  - Loads message history via `GET /api/rooms/:roomId/messages` on mount (once roomId is available)
+  - Listens for `NEW_MESSAGE`, `USER_TYPING`, `USER_STOP_TYPING` socket events → Redux chatSlice
+  - `sendMessage(content)` — emits `SEND_MESSAGE`; clears typing state
+  - `setTyping(bool)` — emits `TYPING` on first keystroke, resets 2s auto-stop timer on each keystroke, emits `STOP_TYPING` when called with false or timer fires
+- [x] `components/chat/MessageBubble.tsx`:
+  - Own messages: blue bubble, right-aligned via `ml-auto max-w-[85%]`
+  - Others: zinc bubble, left-aligned with avatar initials + sender name above
+  - `whitespace-pre-wrap wrap-break-word` — preserves Shift+Enter newlines, breaks long words
+- [x] `components/chat/ChatInput.tsx`:
+  - Textarea; Enter sends, Shift+Enter inserts newline
+  - Fires `onTyping(true/false)` on value change; clears on send
+- [x] `components/chat/ChatPanel.tsx`:
+  - Driven by `chatSlice.isOpen` / `toggleChat`
+  - Auto-scrolls to bottom on new messages; clears unread count on open
+  - Typing indicator label above input ("X is typing…" / "N people are typing…")
+- [x] `pages/Meeting/MeetingRoomPage.tsx` updated:
+  - `roomId` state set after room fetch, passed to `useChat` for history load
+  - `resetChat()` dispatched on unmount
+  - `<ChatPanel>` and `<ParticipantsPanel>` render side-by-side in the flex main area
 
 ---
 
-### Step 21 — Participants Panel
-- [ ] `components/meeting/ParticipantsPanel.tsx` — Sheet (slide-in):
-  - List all participants with avatar, name, host badge
-  - Audio/video status icons per participant
-  - Raised hand indicator (sorted to top)
-  - Host actions per participant (three-dot menu):
-    - Mute participant (emit `mute-participant` socket event)
-    - Remove from meeting (emit `remove-participant`, target socket disconnects from room)
-    - Transfer host role
-  - "Invite" button at top → opens invite dialog
+### Step 21 — Host Controls & Raise Hand
+- [ ] `components/meeting/ParticipantsPanel.tsx` — extend existing panel:
+  - Raised hand indicator per participant (hand icon, sorted to top of list)
+  - Host-only three-dot menu per participant:
+    - Mute participant — emit `mute-participant { targetUserId }` socket event
+    - Remove from meeting — emit `remove-participant { targetUserId }`, target socket disconnects
+    - Transfer host role — emit `transfer-host { targetUserId }`
+- [ ] Backend socket handlers for host controls (`room.handler.ts`):
+  - `mute-participant` — verify emitter is host, emit `you-were-muted` to target socket
+  - `remove-participant` — verify host, disconnect target socket from room
+  - `transfer-host` — verify host, update in-memory map + emit `host-changed` to room
+- [ ] `raise-hand` / `lower-hand` socket events:
+  - Frontend emits on toolbar button press; backend broadcasts `hand-raised { userId }` / `hand-lowered { userId }`
+  - `participantsSlice.updateParticipant` sets `isHandRaised`; panel sorts raised-hand users to top
+  - Hand icon badge on their `VideoTile`
 
 ---
 
 ## Phase 6 — Advanced Features
 
-### Step 22 — Meet Invitations & Share
-- [ ] "Invite" dialog in Participants Panel:
-  - "Copy link" button — copies `{CLIENT_URL}/invite/:token`
-  - QR code display for the room link (using `qrcode.react`)
-  - Email invite tab — multi-email input, calls `POST /api/invitations`
-  - User search tab — search registered users, send invite
-- [ ] `pages/Invite/InviteLandingPage.tsx` — `/invite/:token`:
-  - Call `GET /api/invitations/:token` to get room + inviter info
-  - Show meeting details + "Join Meeting" CTA
-  - If unauthenticated: prompt login/register first, then redirect to lobby
-  - If expired/invalid: show error state
+### Step 22 — Screen Sharing (complete)
+- [x] Screen share toggle in Controls.tsx (blue highlight when active)
+- [x] `useMedia.startScreenShare()` — `getDisplayMedia`, auto-reverts on browser stop button
+- [x] `useWebRTC` — `localStream` effect replaces video track on all peers automatically
+- [ ] Emit `screen-share-started { userId }` / `screen-share-stopped { userId }` socket events
+- [ ] Backend broadcasts to room; frontend updates `participantsSlice.isScreenSharing`
+- [ ] `VideoGrid` auto-pins the screen-sharing tile into spotlight layout
 
 ---
 
-### Step 23 — Screen Sharing
-- [ ] `getDisplayMedia` called from `useMedia.toggleScreenShare()`
-- [ ] Replace video track in all existing `RTCPeerConnection` instances (renegotiate)
-- [ ] Emit `screen-share-started` / `screen-share-stopped` socket events so all peers know whose tile to feature
-- [ ] Screen share tile rendered as full-featured primary view in `VideoGrid`
-- [ ] "Stop sharing" button visible only to the sharer (browser native bar also stops it)
-- [ ] On screen share track `onended` (user clicks browser stop button): auto-revert to camera
-
----
-
-### Step 24 — Reactions & Raise Hand
-- [ ] `components/meeting/ReactionPicker.tsx` — emoji grid popup (6–8 common emojis)
+### Step 23 — Reactions
+- [ ] `components/meeting/ReactionPicker.tsx` — emoji grid popup (6–8 common emojis) in toolbar
 - [ ] On reaction selected: emit `reaction { emoji, userId }` socket event, broadcast to room
 - [ ] `components/meeting/ReactionOverlay.tsx` — floating emoji animations per `VideoTile` (CSS keyframe float-up, fade-out after 3s)
-- [ ] Raise hand: emit `raise-hand` / `lower-hand`, update `participantsSlice`
-- [ ] Raised-hand participants sorted to top of Participants Panel list
-- [ ] Hand icon badge on their `VideoTile`
+
+---
+
+### Step 24 — Meet Invitations & Share
+- [ ] "Invite" button in Participants Panel → opens invite dialog:
+  - "Copy link" tab — copies `{origin}/lobby/:code` to clipboard
+  - Email invite tab — multi-email input, calls `POST /api/invitations`
+- [ ] `pages/Invite/InviteLandingPage.tsx` — `/invite/:token`:
+  - `GET /api/invitations/:token` → show meeting details + "Join Meeting" CTA
+  - If unauthenticated: redirect to register/login, then back to lobby
+  - If expired/accepted/invalid: error state
 
 ---
 
@@ -464,12 +465,12 @@
 | 16 | Lobby / Pre-join Screen | Meeting Room |
 | 17 | WebRTC & Media Hooks | Meeting Room |
 | 18 | Meeting Room Page & Video Grid | Meeting Room |
-| 19 | Meeting Controls Toolbar | Meeting Room |
-| 20 | Chat Panel | Meeting Room |
-| 21 | Participants Panel | Meeting Room |
-| 22 | Meet Invitations & Share | Advanced |
-| 23 | Screen Sharing | Advanced |
-| 24 | Reactions & Raise Hand | Advanced |
+| 19 | Meeting Controls Toolbar ✅ | Meeting Room |
+| 20 | Chat Panel ✅ | Meeting Room |
+| 21 | Host Controls & Raise Hand | Meeting Room |
+| 22 | Screen Sharing (complete) | Advanced |
+| 23 | Reactions | Advanced |
+| 24 | Meet Invitations & Share | Advanced |
 | 25 | Settings & Device Management | Advanced |
 | 26 | Recording | Advanced |
 | 27 | Notifications & UX Polish | Polish |

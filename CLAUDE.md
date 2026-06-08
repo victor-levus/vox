@@ -15,7 +15,7 @@ A full-featured video calling web application (like Google Meet / Microsoft Team
 - **react-icons** — icon library
 - **Redux Toolkit** — global state management
 - **Socket.io-client** — WebSocket real-time communication
-- **simple-peer / native WebRTC API** — peer-to-peer video/audio
+- **Native WebRTC API** — peer-to-peer video/audio (no simple-peer)
 
 ### Backend
 - **Node.js + Express + TypeScript**
@@ -184,15 +184,15 @@ SESSION_MAX_AGE_MS=604800000          # 7 days in milliseconds
 SESSION_COOKIE_SECURE=false           # true in production (HTTPS only)
 SESSION_COOKIE_SAME_SITE=lax          # lax | strict | none
 PORT=4000
-CLIENT_URL="http://localhost:5173"
+CLIENT_URL="http://localhost:5173"    # comma-separate to allow multiple origins e.g. ngrok
 SMTP_HOST=
 SMTP_PORT=
 SMTP_USER=
 SMTP_PASS=
 
 # Frontend
-VITE_API_URL="http://localhost:4000/api"
-VITE_SOCKET_URL="http://localhost:4000"
+VITE_API_URL="/api"                   # relative — routes through Vite proxy; never use absolute URL
+VITE_SOCKET_URL=""                    # empty = socket.io connects to current page origin via proxy
 VITE_STUN_URL="stun:stun.l.google.com:19302"
 VITE_TURN_URL="turn:localhost:3478"
 VITE_TURN_USERNAME=
@@ -254,3 +254,14 @@ cd backend && npx prisma studio
 - `src/index.css`: replace `@tailwind base/components/utilities` with `@import "tailwindcss"`
 - Load animate plugin via CSS: `@plugin "tailwindcss-animate"` — remove from `tailwind.config.ts` plugins array
 - Load JS config via CSS: `@config "../tailwind.config.ts"`
+- **Renamed utility classes** (v3 → v4): `break-words` → `wrap-break-word`, `transform-[scaleX(-1)]` → `scale-x-[-1]`; IDE lints these as `suggestCanonicalClasses`
+
+### Vite dev server — ngrok / external host access
+- Vite 5.4+ rejects requests whose `Host` header isn't `localhost` (DNS rebinding protection) — results in `403 Forbidden` through ngrok
+- Fix: add `server.allowedHosts: ['<ngrok-subdomain>.ngrok-free.dev']` in `vite.config.ts`
+- Always use **relative** `VITE_API_URL="/api"` and empty `VITE_SOCKET_URL=""` so requests route through the Vite proxy regardless of origin; never hardcode an absolute ngrok URL
+
+### CORS — multiple allowed origins
+- `CLIENT_URL` in `backend/.env` supports comma-separated origins: `"http://localhost:5173,https://<ngrok-url>"`
+- `app.ts` and `websocket/socket.ts` parse it: `config.CLIENT_URL.split(',').map(o => o.trim())`
+- Socket.io-client: use `io(import.meta.env.VITE_SOCKET_URL || undefined)` — passing `undefined` connects to the current page origin; `''` is unreliable

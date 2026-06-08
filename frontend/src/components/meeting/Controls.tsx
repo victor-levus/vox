@@ -13,7 +13,7 @@ import {
   BsPeopleFill,
 } from 'react-icons/bs';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { toggleChat } from '@/store/slices/uiSlice';
+import { toggleChat } from '@/store/slices/chatSlice';
 import { togglePanel } from '@/store/slices/participantsSlice';
 import { cn } from '@/lib/utils';
 
@@ -70,7 +70,7 @@ export function Controls({
   onLeave,
 }: ControlsProps) {
   const dispatch = useAppDispatch();
-  const isChatOpen = useAppSelector((s) => s.ui.isChatOpen);
+  const { isOpen: isChatOpen, unreadCount } = useAppSelector((s) => s.chat);
   const isParticipantsOpen = useAppSelector((s) => s.participants.isOpen);
 
   return (
@@ -128,17 +128,24 @@ export function Controls({
 
       {/* Right — panel toggles */}
       <div className="flex flex-1 items-center justify-end gap-2">
-        <ControlButton
-          onClick={() => dispatch(toggleChat())}
-          title={isChatOpen ? 'Close chat' : 'Open chat'}
-          variant={isChatOpen ? 'neutral' : 'ghost'}
-        >
-          {isChatOpen ? (
-            <BsChatDotsFill className="h-5 w-5" />
-          ) : (
-            <BsChatDots className="h-5 w-5" />
+        <div className="relative">
+          <ControlButton
+            onClick={() => dispatch(toggleChat())}
+            title={isChatOpen ? 'Close chat' : 'Open chat'}
+            variant={isChatOpen ? 'neutral' : 'ghost'}
+          >
+            {isChatOpen ? (
+              <BsChatDotsFill className="h-5 w-5" />
+            ) : (
+              <BsChatDots className="h-5 w-5" />
+            )}
+          </ControlButton>
+          {!isChatOpen && unreadCount > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
           )}
-        </ControlButton>
+        </div>
 
         <ControlButton
           onClick={() => dispatch(togglePanel())}

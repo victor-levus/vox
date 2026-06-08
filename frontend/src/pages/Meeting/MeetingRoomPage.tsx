@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { joinMeeting, leaveMeeting, toggleMute, toggleCamera } from '@/store/slices/meetingSlice';
@@ -8,15 +8,18 @@ import {
   removeParticipant,
   resetParticipants,
 } from '@/store/slices/participantsSlice';
+import { resetChat } from '@/store/slices/chatSlice';
 import { meetingService } from '@/services/meeting.service';
 import { SocketEvents } from '@/types';
 import type { Participant } from '@/types';
 import { useMedia } from '@/hooks/useMedia';
 import { useSocket } from '@/hooks/useSocket';
 import { useWebRTC } from '@/hooks/useWebRTC';
+import { useChat } from '@/hooks/useChat';
 import { VideoGrid } from '@/components/meeting/VideoGrid';
 import { Controls } from '@/components/meeting/Controls';
 import { ParticipantsPanel } from '@/components/meeting/ParticipantsPanel';
+import { ChatPanel } from '@/components/chat/ChatPanel';
 
 interface SocketParticipant {
   userId: string;
@@ -53,6 +56,7 @@ export default function MeetingRoomPage() {
   const participants = useAppSelector((s) => s.participants.participants);
 
   const roomRef = useRef<{ id: string; hostId: string } | null>(null);
+  const [roomId, setRoomId] = useState<string | null>(null);
 
   const {
     localStream,
@@ -67,6 +71,7 @@ export default function MeetingRoomPage() {
 
   const socket = useSocket(code!);
   const { remoteStreams } = useWebRTC(socket, localStream);
+  const { sendMessage, setTyping } = useChat(socket, roomId);
 
   useEffect(() => {
     if (!code) return;
@@ -74,6 +79,7 @@ export default function MeetingRoomPage() {
       .getRoomByCode(code)
       .then(({ room }) => {
         roomRef.current = { id: room.id, hostId: room.hostId };
+        setRoomId(room.id);
         dispatch(joinMeeting({ roomCode: room.code, roomName: room.name, roomId: room.id }));
       })
       .catch(() => navigate('/dashboard', { replace: true }));
@@ -81,6 +87,7 @@ export default function MeetingRoomPage() {
     return () => {
       dispatch(leaveMeeting());
       dispatch(resetParticipants());
+      dispatch(resetChat());
     };
   }, [code, dispatch, navigate]);
 
@@ -150,6 +157,7 @@ export default function MeetingRoomPage() {
           />
         </div>
         <ParticipantsPanel />
+        <ChatPanel onSend={sendMessage} onTyping={setTyping} />
       </div>
 
       <Controls
