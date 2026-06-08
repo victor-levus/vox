@@ -8,8 +8,9 @@ import { registerSignalingHandlers } from './handlers/signaling.handler';
 import { registerChatHandlers } from './handlers/chat.handler';
 
 export function initSocket(httpServer: http.Server): Server {
+  const allowedOrigins = config.CLIENT_URL.split(',').map((o) => o.trim());
   const io = new Server(httpServer, {
-    cors: { origin: config.CLIENT_URL, credentials: true },
+    cors: { origin: allowedOrigins, credentials: true },
   });
 
   // Attach express-session to each socket handshake request

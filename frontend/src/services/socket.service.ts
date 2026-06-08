@@ -5,7 +5,7 @@ let socket: Socket | null = null;
 export const socketService = {
   connect(): Socket {
     if (!socket) {
-      socket = io(import.meta.env.VITE_SOCKET_URL ?? '', {
+      socket = io(import.meta.env.VITE_SOCKET_URL || undefined, {
         withCredentials: true,
         transports: ['websocket', 'polling'],
       });

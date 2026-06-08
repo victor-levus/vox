@@ -1,12 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
-  BsMicFill,
-  BsMicMuteFill,
-  BsCameraVideoFill,
-  BsCameraVideoOffFill,
-  BsTelephoneXFill,
-} from 'react-icons/bs';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { joinMeeting, leaveMeeting, toggleMute, toggleCamera } from '@/store/slices/meetingSlice';
 import {
@@ -22,6 +15,8 @@ import { useMedia } from '@/hooks/useMedia';
 import { useSocket } from '@/hooks/useSocket';
 import { useWebRTC } from '@/hooks/useWebRTC';
 import { VideoGrid } from '@/components/meeting/VideoGrid';
+import { Controls } from '@/components/meeting/Controls';
+import { ParticipantsPanel } from '@/components/meeting/ParticipantsPanel';
 
 interface SocketParticipant {
   userId: string;
@@ -55,24 +50,24 @@ export default function MeetingRoomPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const user = useAppSelector((s) => s.auth.user)!;
-  const { isMuted, isCameraOff } = useAppSelector((s) => s.meeting);
   const participants = useAppSelector((s) => s.participants.participants);
 
-  // Room metadata needed for participant role resolution in socket events
   const roomRef = useRef<{ id: string; hostId: string } | null>(null);
 
   const {
     localStream,
     isAudioEnabled,
     isVideoEnabled,
+    isScreenSharing,
     toggleAudio,
     toggleVideo,
+    startScreenShare,
+    stopScreenShare,
   } = useMedia();
 
   const socket = useSocket(code!);
   const { remoteStreams } = useWebRTC(socket, localStream);
 
-  // Fetch room and initialise meeting Redux state
   useEffect(() => {
     if (!code) return;
     meetingService
@@ -89,7 +84,6 @@ export default function MeetingRoomPage() {
     };
   }, [code, dispatch, navigate]);
 
-  // Sync participant socket events → Redux participantsSlice
   useEffect(() => {
     if (!socket) return;
 
@@ -130,67 +124,43 @@ export default function MeetingRoomPage() {
     dispatch(toggleCamera());
   };
 
+  const handleToggleScreenShare = async () => {
+    if (isScreenSharing) {
+      stopScreenShare();
+    } else {
+      await startScreenShare();
+    }
+  };
+
   const handleLeave = () => {
     navigate('/dashboard', { replace: true });
   };
 
   return (
     <div className="flex h-screen flex-col bg-zinc-950">
-      {/* Video area */}
-      <div className="min-h-0 flex-1">
-        <VideoGrid
-          localStream={localStream}
-          localUser={user}
-          isLocalAudioEnabled={isAudioEnabled}
-          isLocalVideoEnabled={isVideoEnabled}
-          remoteStreams={remoteStreams}
-          participants={participants}
-        />
+      <div className="flex min-h-0 flex-1">
+        <div className="min-w-0 flex-1">
+          <VideoGrid
+            localStream={localStream}
+            localUser={user}
+            isLocalAudioEnabled={isAudioEnabled}
+            isLocalVideoEnabled={isVideoEnabled}
+            remoteStreams={remoteStreams}
+            participants={participants}
+          />
+        </div>
+        <ParticipantsPanel />
       </div>
 
-      {/* Minimal toolbar — full toolbar added in Step 19 */}
-      <div className="flex shrink-0 items-center justify-center gap-3 bg-zinc-900 px-4 py-3">
-        <button
-          onClick={handleToggleAudio}
-          title={isMuted ? 'Unmute' : 'Mute'}
-          className={`flex h-12 w-12 items-center justify-center rounded-full transition-colors ${
-            isMuted
-              ? 'bg-destructive text-white hover:bg-destructive/90'
-              : 'bg-zinc-700 text-white hover:bg-zinc-600'
-          }`}
-        >
-          {isMuted ? (
-            <BsMicMuteFill className="h-5 w-5" />
-          ) : (
-            <BsMicFill className="h-5 w-5" />
-          )}
-        </button>
-
-        <button
-          onClick={handleToggleVideo}
-          title={isCameraOff ? 'Turn on camera' : 'Turn off camera'}
-          className={`flex h-12 w-12 items-center justify-center rounded-full transition-colors ${
-            isCameraOff
-              ? 'bg-destructive text-white hover:bg-destructive/90'
-              : 'bg-zinc-700 text-white hover:bg-zinc-600'
-          }`}
-        >
-          {isCameraOff ? (
-            <BsCameraVideoOffFill className="h-5 w-5" />
-          ) : (
-            <BsCameraVideoFill className="h-5 w-5" />
-          )}
-        </button>
-
-        <button
-          onClick={handleLeave}
-          title="Leave meeting"
-          className="flex h-12 w-28 items-center justify-center gap-2 rounded-full bg-destructive text-white transition-colors hover:bg-destructive/90"
-        >
-          <BsTelephoneXFill className="h-4 w-4" />
-          <span className="text-sm font-medium">Leave</span>
-        </button>
-      </div>
+      <Controls
+        isAudioEnabled={isAudioEnabled}
+        isVideoEnabled={isVideoEnabled}
+        isScreenSharing={isScreenSharing}
+        onToggleAudio={handleToggleAudio}
+        onToggleVideo={handleToggleVideo}
+        onToggleScreenShare={handleToggleScreenShare}
+        onLeave={handleLeave}
+      />
     </div>
   );
 }

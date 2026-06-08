@@ -25,29 +25,26 @@ export function VideoTile({
 }: VideoTileProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // React's `muted` prop has a known bug and doesn't reliably update the DOM
-  // attribute, which blocks autoplay. Set it directly via the DOM property.
-  useEffect(() => {
-    if (videoRef.current) videoRef.current.muted = isLocal;
-  }, [isLocal]);
-
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
     video.srcObject = stream;
-    if (stream) video.play().catch(() => {});
+    if (stream) video.play().catch((err: unknown) => console.error('[VideoTile] play() failed:', err));
   }, [stream]);
 
   const showVideo = isVideoEnabled && stream !== null;
 
   return (
     <div className="group relative h-full w-full overflow-hidden rounded-xl bg-zinc-900">
-      {/* Video element — always mounted so ref is stable; muted set via DOM */}
+      {/* React's `muted` JSX prop doesn't reach the DOM — set it via ref callback. */}
       <video
-        ref={videoRef}
+        ref={(el) => {
+          videoRef.current = el;
+          if (el) el.muted = isLocal;
+        }}
         autoPlay
         playsInline
-        className={`h-full w-full object-cover ${isLocal ? 'transform-[scaleX(-1)]' : ''} ${showVideo ? '' : 'hidden'}`}
+        className={`h-full w-full object-cover ${isLocal ? 'scale-x-[-1]' : ''} ${showVideo ? '' : 'hidden'}`}
       />
 
       {/* Camera-off fallback */}

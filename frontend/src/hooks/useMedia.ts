@@ -16,7 +16,9 @@ export function useMedia() {
         cameraStreamRef.current = stream;
         setLocalStream(stream);
       })
-      .catch(() => {});
+      .catch((err: unknown) => {
+        console.error('[useMedia] getUserMedia failed:', err);
+      });
 
     return () => {
       cameraStreamRef.current?.getTracks().forEach((t) => t.stop());

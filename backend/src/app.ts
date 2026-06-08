@@ -16,7 +16,16 @@ import messagesRouter from './modules/messages/messages.routes';
 const app = express();
 
 app.use(helmet());
-app.use(cors({ origin: config.CLIENT_URL, credentials: true }));
+const allowedOrigins = config.CLIENT_URL.split(',').map((o) => o.trim());
+app.use(
+  cors({
+    origin: (origin, cb) => {
+      if (!origin || allowedOrigins.includes(origin)) cb(null, true);
+      else cb(new Error(`Origin ${origin} not allowed`));
+    },
+    credentials: true,
+  }),
+);
 app.use(morgan(config.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json());
 app.use(cookieParser());

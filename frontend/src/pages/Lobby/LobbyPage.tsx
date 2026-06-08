@@ -158,7 +158,7 @@ export default function LobbyPage() {
               autoPlay
               playsInline
               muted
-              className={`h-full w-full object-cover transform-[scaleX(-1)] ${isCameraOff ? 'hidden' : ''}`}
+              className={`h-full w-full object-cover scale-x-[-1] ${isCameraOff ? 'hidden' : ''}`}
             />
 
             {/* Camera-off overlay */}

@@ -179,6 +179,18 @@ export function useWebRTC(socket: Socket | null, localStream: MediaStream | null
     };
   }, [socket, createPeerConnection, flushPendingCandidates, removePeer]);
 
+  // When localStream changes (e.g. screen share starts/stops), replace the video
+  // track on every active peer connection so remote participants see the new feed.
+  useEffect(() => {
+    if (!localStream) return;
+    const videoTrack = localStream.getVideoTracks()[0];
+    if (!videoTrack) return;
+    peersRef.current.forEach((pc) => {
+      const sender = pc.getSenders().find((s) => s.track?.kind === 'video');
+      sender?.replaceTrack(videoTrack).catch(() => {});
+    });
+  }, [localStream]);
+
   // Close all peer connections on unmount
   useEffect(() => {
     const peers = peersRef.current;
