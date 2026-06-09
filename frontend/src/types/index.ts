@@ -46,6 +46,7 @@ export interface Invitation {
   roomId: string;
   room: Pick<Room, 'id' | 'code' | 'name'>;
   invitedEmail: string;
+  inviter?: Pick<User, 'id' | 'name' | 'avatar'>;
   token: string;
   expiresAt: string;
   accepted: boolean;

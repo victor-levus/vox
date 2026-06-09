@@ -353,14 +353,18 @@
 
 ---
 
-### Step 24 — Meet Invitations & Share
-- [ ] "Invite" button in Participants Panel → opens invite dialog:
-  - "Copy link" tab — copies `{origin}/lobby/:code` to clipboard
-  - Email invite tab — multi-email input, calls `POST /api/invitations`
-- [ ] `pages/Invite/InviteLandingPage.tsx` — `/invite/:token`:
-  - `GET /api/invitations/:token` → show meeting details + "Join Meeting" CTA
-  - If unauthenticated: redirect to register/login, then back to lobby
-  - If expired/accepted/invalid: error state
+### Step 24 — Meet Invitations & Share ✅
+- [x] `InviteDialog.tsx` — two-tab dialog:
+  - "Copy link" tab (all users): read-only link input + Copy button
+  - "Email invite" tab (host only): chip input (Enter/comma/Tab to commit, Backspace removes last, onBlur commits pending); calls `POST /api/invitations` with `sendEmail: true`; real emails sent only when `SMTP_HOST` is configured in backend `.env`
+- [x] `pages/Invite/InviteLandingPage.tsx` — `/invite/:token`:
+  - Waits for both auth check and invitation fetch before rendering
+  - Shows inviter name + room name + "Join meeting" CTA (authenticated) or Sign in / Create account buttons (unauthenticated)
+  - Expired/used/invalid token → error card with "Go to dashboard" link
+- [x] `ParticipantsPanel.tsx` — `BsPersonPlus` invite button in panel header opens `InviteDialog`; accepts `roomId`/`roomCode` props (passed from `MeetingRoomPage`)
+- [x] `DashboardPage.tsx` — "Invite people" dropdown item opens `InviteDialog` for that room
+- [x] `LoginPage` + `RegisterPage` — `useSearchParams` reads `?redirect=` and navigates there after successful auth (enables invite deep-link flow)
+- [x] `types/index.ts` — added `inviter?: Pick<User, 'id' | 'name' | 'avatar'>` to `Invitation`
 
 ---
 
@@ -484,7 +488,7 @@
 | 21 | Host Controls & Raise Hand | Meeting Room |
 | 22 | Screen Sharing (complete) | Advanced |
 | 23 | Reactions | Advanced |
-| 24 | Meet Invitations & Share | Advanced |
+| 24 | Meet Invitations & Share ✅ | Advanced |
 | 25 | Settings & Device Management | Advanced |
 | 26 | Recording | Advanced |
 | 27 | Notifications & UX Polish | Polish |

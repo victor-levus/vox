@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { Socket } from 'socket.io-client';
 import {
   BsXLg,
@@ -7,6 +8,7 @@ import {
   BsCameraVideoOffFill,
   BsHandIndexFill,
   BsThreeDotsVertical,
+  BsPersonPlus,
 } from 'react-icons/bs';
 import {
   DropdownMenu,
@@ -18,18 +20,23 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { togglePanel } from '@/store/slices/participantsSlice';
 import { SocketEvents } from '@/types';
 import type { Participant } from '@/types';
+import { InviteDialog } from './InviteDialog';
 
 interface ParticipantsPanelProps {
   socket: Socket | null;
+  roomId: string;
+  roomCode: string;
 }
 
-export function ParticipantsPanel({ socket }: ParticipantsPanelProps) {
+export function ParticipantsPanel({ socket, roomId, roomCode }: ParticipantsPanelProps) {
   const dispatch = useAppDispatch();
   const isOpen = useAppSelector((s) => s.participants.isOpen);
   const participants = useAppSelector((s) => s.participants.participants);
   const currentUserId = useAppSelector((s) => s.auth.user?.id);
   const hostId = useAppSelector((s) => s.meeting.hostId);
   const isCurrentUserHost = hostId === currentUserId;
+
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   if (!isOpen) return null;
 
@@ -40,31 +47,50 @@ export function ParticipantsPanel({ socket }: ParticipantsPanelProps) {
   });
 
   return (
-    <div className="flex h-full w-72 shrink-0 flex-col border-l border-zinc-800 bg-zinc-900">
-      <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
-        <h2 className="text-sm font-semibold text-white">
-          Participants ({participants.length})
-        </h2>
-        <button
-          onClick={() => dispatch(togglePanel())}
-          className="rounded-full p-1 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
-        >
-          <BsXLg className="h-4 w-4" />
-        </button>
+    <>
+      <div className="flex h-full w-72 shrink-0 flex-col border-l border-zinc-800 bg-zinc-900">
+        <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
+          <h2 className="text-sm font-semibold text-white">
+            Participants ({participants.length})
+          </h2>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setInviteOpen(true)}
+              title="Invite people"
+              className="rounded-full p-1 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
+            >
+              <BsPersonPlus className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => dispatch(togglePanel())}
+              className="rounded-full p-1 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
+            >
+              <BsXLg className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-2">
+          {sorted.map((p) => (
+            <ParticipantRow
+              key={p.id}
+              participant={p}
+              isCurrentUserHost={isCurrentUserHost}
+              isSelf={p.userId === currentUserId}
+              socket={socket}
+            />
+          ))}
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2">
-        {sorted.map((p) => (
-          <ParticipantRow
-            key={p.id}
-            participant={p}
-            isCurrentUserHost={isCurrentUserHost}
-            isSelf={p.userId === currentUserId}
-            socket={socket}
-          />
-        ))}
-      </div>
-    </div>
+      <InviteDialog
+        open={inviteOpen}
+        onClose={() => setInviteOpen(false)}
+        roomId={roomId}
+        roomCode={roomCode}
+        isHost={isCurrentUserHost}
+      />
+    </>
   );
 }
 

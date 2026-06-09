@@ -305,7 +305,7 @@ export default function MeetingRoomPage() {
             reactionsByUserId={reactionsByUserId}
           />
         </div>
-        <ParticipantsPanel socket={socket} />
+        <ParticipantsPanel socket={socket} roomId={roomId ?? ''} roomCode={code!} />
         <ChatPanel onSend={sendMessage} onTyping={setTyping} />
       </div>
 

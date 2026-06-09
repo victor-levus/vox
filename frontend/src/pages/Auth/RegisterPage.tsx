@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -28,6 +28,8 @@ type FormData = z.infer<typeof schema>;
 export default function RegisterPage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get('redirect') ?? '/dashboard';
   const [serverError, setServerError] = useState<string | null>(null);
 
   const {
@@ -41,7 +43,7 @@ export default function RegisterPage() {
     try {
       const { user } = await authService.register(data);
       dispatch(setUser(user));
-      navigate('/dashboard', { replace: true });
+      navigate(redirectTo, { replace: true });
     } catch (err) {
       const message =
         (err as AxiosError<{ message: string }>).response?.data?.message ??

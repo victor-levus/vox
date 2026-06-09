@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { BsCameraVideo, BsLink45Deg, BsPeople, BsThreeDots, BsTrash } from 'react-icons/bs';
+import { InviteDialog } from '@/components/meeting/InviteDialog';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { clearAuth } from '@/store/slices/authSlice';
 import { authService } from '@/services/auth.service';
@@ -58,6 +59,7 @@ export default function DashboardPage() {
   const [joinCode, setJoinCode] = useState('');
   const [showNewMeetingDialog, setShowNewMeetingDialog] = useState(false);
   const [newMeetingName, setNewMeetingName] = useState('');
+  const [inviteRoom, setInviteRoom] = useState<RoomWithCount | null>(null);
 
   useEffect(() => {
     meetingService
@@ -226,9 +228,7 @@ export default function DashboardPage() {
                           <BsLink45Deg className="mr-2 h-4 w-4" />
                           Copy link
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => toast.info('Invite people — available in a later step')}
-                        >
+                        <DropdownMenuItem onClick={() => setInviteRoom(room)}>
                           <BsPeople className="mr-2 h-4 w-4" />
                           Invite people
                         </DropdownMenuItem>
@@ -249,6 +249,16 @@ export default function DashboardPage() {
           )}
         </section>
       </main>
+
+      {inviteRoom && (
+        <InviteDialog
+          open={!!inviteRoom}
+          onClose={() => setInviteRoom(null)}
+          roomId={inviteRoom.id}
+          roomCode={inviteRoom.code}
+          isHost={true}
+        />
+      )}
 
       <Dialog
         open={showNewMeetingDialog}
