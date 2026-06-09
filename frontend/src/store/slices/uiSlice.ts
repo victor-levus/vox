@@ -1,20 +1,28 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 type Theme = 'light' | 'dark' | 'system';
-type MeetingLayout = 'grid' | 'spotlight' | 'sidebar';
+export type MeetingLayout = 'grid' | 'spotlight' | 'sidebar';
 
 interface UiState {
   theme: Theme;
   meetingLayout: MeetingLayout;
   isSettingsOpen: boolean;
   isInviteOpen: boolean;
+  audioOutputId: string;
+}
+
+function loadLayout(): MeetingLayout {
+  const v = localStorage.getItem('meetingLayout');
+  if (v === 'grid' || v === 'spotlight' || v === 'sidebar') return v;
+  return 'grid';
 }
 
 const initialState: UiState = {
   theme: 'system',
-  meetingLayout: 'grid',
+  meetingLayout: loadLayout(),
   isSettingsOpen: false,
   isInviteOpen: false,
+  audioOutputId: '',
 };
 
 const uiSlice = createSlice({
@@ -26,6 +34,7 @@ const uiSlice = createSlice({
     },
     setMeetingLayout(state, action: PayloadAction<MeetingLayout>) {
       state.meetingLayout = action.payload;
+      localStorage.setItem('meetingLayout', action.payload);
     },
     toggleSettings(state) {
       state.isSettingsOpen = !state.isSettingsOpen;
@@ -33,8 +42,12 @@ const uiSlice = createSlice({
     toggleInvite(state) {
       state.isInviteOpen = !state.isInviteOpen;
     },
+    setAudioOutput(state, action: PayloadAction<string>) {
+      state.audioOutputId = action.payload;
+    },
   },
 });
 
-export const { setTheme, setMeetingLayout, toggleSettings, toggleInvite } = uiSlice.actions;
+export const { setTheme, setMeetingLayout, toggleSettings, toggleInvite, setAudioOutput } =
+  uiSlice.actions;
 export default uiSlice.reducer;

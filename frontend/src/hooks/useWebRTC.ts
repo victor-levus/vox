@@ -179,15 +179,21 @@ export function useWebRTC(socket: Socket | null, localStream: MediaStream | null
     };
   }, [socket, createPeerConnection, flushPendingCandidates, removePeer]);
 
-  // When localStream changes (e.g. screen share starts/stops), replace the video
-  // track on every active peer connection so remote participants see the new feed.
+  // When localStream changes (screen share, camera switch, mic switch), replace
+  // video and audio tracks on every active peer connection.
   useEffect(() => {
     if (!localStream) return;
     const videoTrack = localStream.getVideoTracks()[0];
-    if (!videoTrack) return;
+    const audioTrack = localStream.getAudioTracks()[0];
     peersRef.current.forEach((pc) => {
-      const sender = pc.getSenders().find((s) => s.track?.kind === 'video');
-      sender?.replaceTrack(videoTrack).catch(() => {});
+      if (videoTrack) {
+        const sender = pc.getSenders().find((s) => s.track?.kind === 'video');
+        sender?.replaceTrack(videoTrack).catch(() => {});
+      }
+      if (audioTrack) {
+        const sender = pc.getSenders().find((s) => s.track?.kind === 'audio');
+        sender?.replaceTrack(audioTrack).catch(() => {});
+      }
     });
   }, [localStream]);
 

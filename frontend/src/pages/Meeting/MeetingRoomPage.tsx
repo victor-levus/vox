@@ -33,6 +33,7 @@ import { VideoGrid } from '@/components/meeting/VideoGrid';
 import { Controls } from '@/components/meeting/Controls';
 import { ParticipantsPanel } from '@/components/meeting/ParticipantsPanel';
 import { ChatPanel } from '@/components/chat/ChatPanel';
+import { SettingsModal } from '@/components/meeting/SettingsModal';
 
 interface SocketParticipant {
   userId: string;
@@ -79,9 +80,13 @@ export default function MeetingRoomPage() {
 
   const {
     localStream,
+    cameraStream,
     isAudioEnabled,
     isVideoEnabled,
     isScreenSharing,
+    devices,
+    activeVideoId,
+    activeAudioId,
     toggleAudio,
     toggleVideo,
     muteAudio,
@@ -90,6 +95,8 @@ export default function MeetingRoomPage() {
     enableVideo,
     startScreenShare,
     stopScreenShare,
+    switchCamera,
+    switchMicrophone,
   } = useMedia({ initialAudioEnabled, initialVideoEnabled });
 
   const socket = useSocket(code!);
@@ -308,6 +315,15 @@ export default function MeetingRoomPage() {
         <ParticipantsPanel socket={socket} roomId={roomId ?? ''} roomCode={code!} />
         <ChatPanel onSend={sendMessage} onTyping={setTyping} />
       </div>
+
+      <SettingsModal
+        cameraStream={cameraStream}
+        devices={devices}
+        activeVideoId={activeVideoId}
+        activeAudioId={activeAudioId}
+        onSwitchCamera={switchCamera}
+        onSwitchMicrophone={switchMicrophone}
+      />
 
       <Controls
         isAudioEnabled={isAudioEnabled}

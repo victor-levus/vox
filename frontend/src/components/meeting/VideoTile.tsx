@@ -17,6 +17,7 @@ interface VideoTileProps {
   reactions?: Reaction[];
   isPinned?: boolean;
   onTogglePin?: () => void;
+  audioOutputId?: string;
 }
 
 export function VideoTile({
@@ -30,6 +31,7 @@ export function VideoTile({
   reactions = [],
   isPinned = false,
   onTogglePin,
+  audioOutputId,
 }: VideoTileProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -42,6 +44,17 @@ export function VideoTile({
       video.srcObject = null;
     };
   }, [stream]);
+
+  // Apply audio output device when it changes (Chrome/Edge only; no-op elsewhere)
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || isLocal || !audioOutputId) return;
+    if ('setSinkId' in video) {
+      (video as HTMLVideoElement & { setSinkId: (id: string) => Promise<void> })
+        .setSinkId(audioOutputId)
+        .catch(() => {});
+    }
+  }, [audioOutputId, isLocal]);
 
   const showVideo = isVideoEnabled && stream !== null;
 

@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { VideoTile } from './VideoTile';
 import type { Reaction } from './ReactionOverlay';
 import type { Participant, User } from '@/types';
+import { useAppSelector } from '@/store';
 
 interface TileData {
   key: string;
@@ -47,7 +48,11 @@ export function VideoGrid({
   participants,
   reactionsByUserId,
 }: VideoGridProps) {
-  const [manualPinnedId, setManualPinnedId] = useState<string | null>(null);
+  // undefined = no manual choice; string = manually pinned; null = explicitly unpinned
+  const [manualPinnedId, setManualPinnedId] = useState<string | null | undefined>(undefined);
+
+  const meetingLayout = useAppSelector((s) => s.ui.meetingLayout);
+  const audioOutputId = useAppSelector((s) => s.ui.audioOutputId);
 
   const tiles: TileData[] = useMemo(() => {
     const list: TileData[] = [
@@ -85,14 +90,25 @@ export function VideoGrid({
     return list;
   }, [localStream, localUser, isLocalAudioEnabled, isLocalVideoEnabled, isLocalHandRaised, isLocalScreenSharing, remoteStreams, participants, reactionsByUserId]);
 
-  // Screen share always takes priority over manual pin
+  // Screen share always takes priority
   const screenShareTile = useMemo(() => tiles.find((t) => t.isScreenSharing), [tiles]);
-  const effectivePinnedId = screenShareTile?.key ?? manualPinnedId;
-  const pinnedTile = effectivePinnedId ? tiles.find((t) => t.key === effectivePinnedId) ?? null : null;
+
+  // In spotlight layout preference, auto-pin the first remote tile when no manual choice
+  const autoSpotlightKey = useMemo(() => {
+    if (meetingLayout !== 'spotlight') return null;
+    return tiles.find((t) => !t.isLocal)?.key ?? null;
+  }, [meetingLayout, tiles]);
+
+  const effectivePinnedId =
+    screenShareTile?.key ?? (manualPinnedId !== undefined ? manualPinnedId : autoSpotlightKey);
+
+  const pinnedTile = effectivePinnedId
+    ? tiles.find((t) => t.key === effectivePinnedId) ?? null
+    : null;
 
   const count = tiles.length;
 
-  // Spotlight layout: one large pinned tile + strip of others
+  // Spotlight layout: one large pinned tile + horizontal strip of others
   if (pinnedTile) {
     const otherTiles = tiles.filter((t) => t.key !== effectivePinnedId);
     return (
@@ -101,6 +117,7 @@ export function VideoGrid({
           <VideoTile
             {...pinnedTile}
             isPinned
+            audioOutputId={pinnedTile.isLocal ? undefined : audioOutputId}
             onTogglePin={screenShareTile ? undefined : () => setManualPinnedId(null)}
           />
         </div>
@@ -110,6 +127,7 @@ export function VideoGrid({
               <div key={tile.key} className="h-full w-44 shrink-0">
                 <VideoTile
                   {...tile}
+                  audioOutputId={tile.isLocal ? undefined : audioOutputId}
                   onTogglePin={screenShareTile ? undefined : () => setManualPinnedId(tile.key)}
                 />
               </div>
@@ -128,7 +146,12 @@ export function VideoGrid({
       }`}
     >
       {tiles.map((tile) => (
-        <VideoTile key={tile.key} {...tile} onTogglePin={() => setManualPinnedId(tile.key)} />
+        <VideoTile
+          key={tile.key}
+          {...tile}
+          audioOutputId={tile.isLocal ? undefined : audioOutputId}
+          onTogglePin={() => setManualPinnedId(tile.key)}
+        />
       ))}
     </div>
   );

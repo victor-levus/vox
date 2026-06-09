@@ -13,10 +13,12 @@ import {
   BsPeopleFill,
   BsHandIndex,
   BsHandIndexFill,
+  BsGear,
 } from 'react-icons/bs';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { toggleChat } from '@/store/slices/chatSlice';
 import { togglePanel } from '@/store/slices/participantsSlice';
+import { toggleSettings } from '@/store/slices/uiSlice';
 import { cn } from '@/lib/utils';
 import { ReactionPicker } from './ReactionPicker';
 
@@ -81,6 +83,7 @@ export function Controls({
   const dispatch = useAppDispatch();
   const { isOpen: isChatOpen, unreadCount } = useAppSelector((s) => s.chat);
   const isParticipantsOpen = useAppSelector((s) => s.participants.isOpen);
+  const isSettingsOpen = useAppSelector((s) => s.ui.isSettingsOpen);
 
   return (
     <div className="flex shrink-0 items-center bg-zinc-900 px-4 py-3">
@@ -180,6 +183,14 @@ export function Controls({
           ) : (
             <BsPeople className="h-5 w-5" />
           )}
+        </ControlButton>
+
+        <ControlButton
+          onClick={() => dispatch(toggleSettings())}
+          title="Settings"
+          variant={isSettingsOpen ? 'neutral' : 'ghost'}
+        >
+          <BsGear className="h-5 w-5" />
         </ControlButton>
       </div>
     </div>

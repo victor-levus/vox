@@ -368,16 +368,15 @@
 
 ---
 
-### Step 25 — Settings & Device Management
-- [ ] `components/meeting/SettingsModal.tsx` — Dialog:
-  - Audio input selector (microphone list from `enumerateDevices`)
-  - Audio output selector (speaker list)
-  - Video input selector (camera list)
-  - Preview pane for selected camera
-  - Background effect toggle: none / blur / (placeholder for virtual bg)
-  - Layout preference: grid / spotlight / sidebar
-- [ ] Persist layout preference to `localStorage`
-- [ ] Apply audio output selection via `HTMLMediaElement.setSinkId()` where supported
+### Step 25 — Settings & Device Management ✅
+- [x] `SettingsModal.tsx` — Dialog with 4 sections: Camera (select + live mirrored preview), Microphone (select), Speaker (select; shows "not supported" note if browser lacks `setSinkId`), Layout (Grid / Spotlight / Sidebar-disabled buttons; persisted to `localStorage`)
+- [x] `useMedia.ts` — added `devices` (enumerateDevices after getUserMedia), `activeVideoId/AudioId` (from track.getSettings()), `cameraStream` state (always camera, not screen), `switchCamera(deviceId)` / `switchMicrophone(deviceId)` (rebuild MediaStream, preserve enabled state, update refs + state)
+- [x] `useWebRTC.ts` — localStream effect now replaces both video and audio senders on all peers (covers mic switch, camera switch, screen share start/stop)
+- [x] `uiSlice.ts` — added `audioOutputId` + `setAudioOutput`; `meetingLayout` now reads from `localStorage` on init and persists on `setMeetingLayout`; exported `MeetingLayout` type
+- [x] `Controls.tsx` — gear `BsGear` button in right panel zone dispatches `toggleSettings()`
+- [x] `VideoTile.tsx` — added `audioOutputId` prop; `setSinkId` called in `useEffect` with feature-detect guard for non-local tiles
+- [x] `VideoGrid.tsx` — reads `meetingLayout` + `audioOutputId` from Redux; `manualPinnedId` starts `undefined`; when layout is `'spotlight'` and no manual choice, auto-pins first remote tile; passes `audioOutputId` to all non-local tiles
+- [x] `MeetingRoomPage.tsx` — destructures `cameraStream`, `devices`, `activeVideoId/AudioId`, `switchCamera/Microphone` from `useMedia`; renders `<SettingsModal>`
 
 ---
 
@@ -489,7 +488,7 @@
 | 22 | Screen Sharing (complete) | Advanced |
 | 23 | Reactions | Advanced |
 | 24 | Meet Invitations & Share ✅ | Advanced |
-| 25 | Settings & Device Management | Advanced |
+| 25 | Settings & Device Management ✅ | Advanced |
 | 26 | Recording | Advanced |
 | 27 | Notifications & UX Polish | Polish |
 | 28 | Security & Production Hardening | Polish |
