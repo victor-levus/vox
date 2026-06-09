@@ -334,20 +334,22 @@
 
 ## Phase 6 — Advanced Features
 
-### Step 22 — Screen Sharing (complete)
+### Step 22 — Screen Sharing (complete) ✅
 - [x] Screen share toggle in Controls.tsx (blue highlight when active)
 - [x] `useMedia.startScreenShare()` — `getDisplayMedia`, auto-reverts on browser stop button
 - [x] `useWebRTC` — `localStream` effect replaces video track on all peers automatically
-- [ ] Emit `screen-share-started { userId }` / `screen-share-stopped { userId }` socket events
-- [ ] Backend broadcasts to room; frontend updates `participantsSlice.isScreenSharing`
-- [ ] `VideoGrid` auto-pins the screen-sharing tile into spotlight layout
+- [x] Emit `screen-share-started { userId }` / `screen-share-stopped { userId }` socket events
+- [x] Backend broadcasts to room; frontend updates `participantsSlice.isScreenSharing`
+- [x] `VideoGrid` auto-pins the screen-sharing tile into spotlight layout
 
 ---
 
-### Step 23 — Reactions
-- [ ] `components/meeting/ReactionPicker.tsx` — emoji grid popup (6–8 common emojis) in toolbar
-- [ ] On reaction selected: emit `reaction { emoji, userId }` socket event, broadcast to room
-- [ ] `components/meeting/ReactionOverlay.tsx` — floating emoji animations per `VideoTile` (CSS keyframe float-up, fade-out after 3s)
+### Step 23 — Reactions ✅
+- [x] `components/meeting/ReactionPicker.tsx` — emoji grid popup (8 emojis: 👍❤️😂😮😢🎉👏🔥) in toolbar
+- [x] On reaction selected: emit `reaction { emoji }` socket event; backend broadcasts `reaction { emoji, userId }` to room
+- [x] `components/meeting/ReactionOverlay.tsx` — floating emoji animations per `VideoTile` (CSS keyframe float-up, fade-out after 3s; pseudo-random X offset per reaction id)
+
+**Bug fix:** ReactionPicker popup positioning — `bottom-full mb-2` replaces `bottom-14`; `w-max` prevents grid from being squashed to button width; `text-2xl leading-none` on emoji buttons; click-outside handler added.
 
 ---
 

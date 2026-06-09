@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAppDispatch, useAppSelector } from '@/store';
@@ -24,6 +24,7 @@ import { resetChat } from '@/store/slices/chatSlice';
 import { meetingService } from '@/services/meeting.service';
 import { SocketEvents } from '@/types';
 import type { Participant } from '@/types';
+import type { Reaction } from '@/components/meeting/ReactionOverlay';
 import { useMedia } from '@/hooks/useMedia';
 import { useSocket } from '@/hooks/useSocket';
 import { useWebRTC } from '@/hooks/useWebRTC';
@@ -74,6 +75,7 @@ export default function MeetingRoomPage() {
 
   const roomRef = useRef<{ id: string; hostId: string } | null>(null);
   const [roomId, setRoomId] = useState<string | null>(null);
+  const [reactionsByUserId, setReactionsByUserId] = useState<Map<string, Reaction[]>>(() => new Map());
 
   const {
     localStream,
@@ -184,9 +186,25 @@ export default function MeetingRoomPage() {
     };
 
     const onParticipantStateUpdated = (
-      update: { userId: string; isAudioEnabled?: boolean; isVideoEnabled?: boolean },
+      update: { userId: string; isAudioEnabled?: boolean; isVideoEnabled?: boolean; isScreenSharing?: boolean },
     ) => {
       dispatch(updateParticipant(update));
+    };
+
+    const onReaction = ({ emoji, userId: reactUserId }: { emoji: string; userId: string }) => {
+      const id = `${Date.now()}-${Math.random()}`;
+      setReactionsByUserId((prev) => {
+        const next = new Map(prev);
+        next.set(reactUserId, [...(next.get(reactUserId) ?? []), { id, emoji }]);
+        return next;
+      });
+      setTimeout(() => {
+        setReactionsByUserId((prev) => {
+          const next = new Map(prev);
+          next.set(reactUserId, (next.get(reactUserId) ?? []).filter((r) => r.id !== id));
+          return next;
+        });
+      }, 3000);
     };
 
     socket.on(SocketEvents.PARTICIPANT_LIST, onParticipantList);
@@ -201,6 +219,7 @@ export default function MeetingRoomPage() {
     socket.on(SocketEvents.YOU_WERE_REMOVED, onYouWereRemoved);
     socket.on(SocketEvents.HOST_CHANGED, onHostChanged);
     socket.on(SocketEvents.PARTICIPANT_STATE_UPDATED, onParticipantStateUpdated);
+    socket.on(SocketEvents.REACTION, onReaction);
 
     return () => {
       socket.off(SocketEvents.PARTICIPANT_LIST, onParticipantList);
@@ -215,8 +234,22 @@ export default function MeetingRoomPage() {
       socket.off(SocketEvents.YOU_WERE_REMOVED, onYouWereRemoved);
       socket.off(SocketEvents.HOST_CHANGED, onHostChanged);
       socket.off(SocketEvents.PARTICIPANT_STATE_UPDATED, onParticipantStateUpdated);
+      socket.off(SocketEvents.REACTION, onReaction);
     };
   }, [socket, dispatch, navigate, muteAudio, unmuteAudio, disableVideo, enableVideo]);
+
+  // Emit screen share events on state change (covers both manual toggle and browser native "Stop sharing")
+  const isScreenSharingRef = useRef(false);
+  useEffect(() => {
+    if (isScreenSharingRef.current === isScreenSharing) return;
+    const wasSharing = isScreenSharingRef.current;
+    isScreenSharingRef.current = isScreenSharing;
+    if (!wasSharing && isScreenSharing) {
+      socket?.emit(SocketEvents.SCREEN_SHARE_STARTED);
+    } else if (wasSharing && !isScreenSharing) {
+      socket?.emit(SocketEvents.SCREEN_SHARE_STOPPED);
+    }
+  }, [isScreenSharing, socket]);
 
   const handleToggleAudio = () => {
     toggleAudio();
@@ -248,6 +281,10 @@ export default function MeetingRoomPage() {
     dispatch(toggleHandRaise());
   };
 
+  const handleReact = useCallback((emoji: string) => {
+    socket?.emit(SocketEvents.REACTION, { emoji });
+  }, [socket]);
+
   const handleLeave = () => {
     navigate('/dashboard', { replace: true });
   };
@@ -262,8 +299,10 @@ export default function MeetingRoomPage() {
             isLocalAudioEnabled={isAudioEnabled}
             isLocalVideoEnabled={isVideoEnabled}
             isLocalHandRaised={isHandRaised}
+            isLocalScreenSharing={isScreenSharing}
             remoteStreams={remoteStreams}
             participants={participants}
+            reactionsByUserId={reactionsByUserId}
           />
         </div>
         <ParticipantsPanel socket={socket} />
@@ -279,6 +318,7 @@ export default function MeetingRoomPage() {
         onToggleVideo={handleToggleVideo}
         onToggleScreenShare={handleToggleScreenShare}
         onToggleRaiseHand={handleToggleRaiseHand}
+        onReact={handleReact}
         onLeave={handleLeave}
       />
     </div>

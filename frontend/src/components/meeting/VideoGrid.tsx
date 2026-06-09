@@ -1,15 +1,19 @@
 import { useState, useMemo } from 'react';
 import { VideoTile } from './VideoTile';
+import type { Reaction } from './ReactionOverlay';
 import type { Participant, User } from '@/types';
 
 interface TileData {
   key: string;
+  userId: string;
   stream: MediaStream | null;
   name: string;
   isLocal: boolean;
   isAudioEnabled: boolean;
   isVideoEnabled: boolean;
   isHandRaised: boolean;
+  isScreenSharing: boolean;
+  reactions: Reaction[];
 }
 
 interface VideoGridProps {
@@ -18,8 +22,10 @@ interface VideoGridProps {
   isLocalAudioEnabled: boolean;
   isLocalVideoEnabled: boolean;
   isLocalHandRaised: boolean;
+  isLocalScreenSharing: boolean;
   remoteStreams: Map<string, MediaStream>;
   participants: Participant[];
+  reactionsByUserId: Map<string, Reaction[]>;
 }
 
 function gridColsClass(count: number): string {
@@ -36,56 +42,76 @@ export function VideoGrid({
   isLocalAudioEnabled,
   isLocalVideoEnabled,
   isLocalHandRaised,
+  isLocalScreenSharing,
   remoteStreams,
   participants,
+  reactionsByUserId,
 }: VideoGridProps) {
-  const [pinnedId, setPinnedId] = useState<string | null>(null);
+  const [manualPinnedId, setManualPinnedId] = useState<string | null>(null);
 
   const tiles: TileData[] = useMemo(() => {
     const list: TileData[] = [
       {
         key: 'local',
+        userId: localUser.id,
         stream: localStream,
         name: localUser.name,
         isLocal: true,
         isAudioEnabled: isLocalAudioEnabled,
         isVideoEnabled: isLocalVideoEnabled,
         isHandRaised: isLocalHandRaised,
+        isScreenSharing: isLocalScreenSharing,
+        reactions: reactionsByUserId.get(localUser.id) ?? [],
       },
     ];
 
     for (const [socketId, stream] of remoteStreams) {
       const p = participants.find((x) => x.socketId === socketId);
+      const uid = p?.userId ?? socketId;
       list.push({
         key: socketId,
+        userId: uid,
         stream,
         name: p?.user.name ?? 'Participant',
         isLocal: false,
         isAudioEnabled: p?.isAudioEnabled ?? true,
         isVideoEnabled: p?.isVideoEnabled ?? true,
         isHandRaised: p?.isHandRaised ?? false,
+        isScreenSharing: p?.isScreenSharing ?? false,
+        reactions: reactionsByUserId.get(uid) ?? [],
       });
     }
 
     return list;
-  }, [localStream, localUser, isLocalAudioEnabled, isLocalVideoEnabled, isLocalHandRaised, remoteStreams, participants]);
+  }, [localStream, localUser, isLocalAudioEnabled, isLocalVideoEnabled, isLocalHandRaised, isLocalScreenSharing, remoteStreams, participants, reactionsByUserId]);
+
+  // Screen share always takes priority over manual pin
+  const screenShareTile = useMemo(() => tiles.find((t) => t.isScreenSharing), [tiles]);
+  const effectivePinnedId = screenShareTile?.key ?? manualPinnedId;
+  const pinnedTile = effectivePinnedId ? tiles.find((t) => t.key === effectivePinnedId) ?? null : null;
 
   const count = tiles.length;
-  const pinnedTile = pinnedId ? tiles.find((t) => t.key === pinnedId) ?? null : null;
 
   // Spotlight layout: one large pinned tile + strip of others
   if (pinnedTile) {
-    const otherTiles = tiles.filter((t) => t.key !== pinnedId);
+    const otherTiles = tiles.filter((t) => t.key !== effectivePinnedId);
     return (
       <div className="flex h-full flex-col gap-2 p-2">
         <div className="min-h-0 flex-1">
-          <VideoTile {...pinnedTile} isPinned onTogglePin={() => setPinnedId(null)} />
+          <VideoTile
+            {...pinnedTile}
+            isPinned
+            onTogglePin={screenShareTile ? undefined : () => setManualPinnedId(null)}
+          />
         </div>
         {otherTiles.length > 0 && (
           <div className="flex h-28 shrink-0 gap-2 overflow-x-auto">
             {otherTiles.map((tile) => (
               <div key={tile.key} className="h-full w-44 shrink-0">
-                <VideoTile {...tile} onTogglePin={() => setPinnedId(tile.key)} />
+                <VideoTile
+                  {...tile}
+                  onTogglePin={screenShareTile ? undefined : () => setManualPinnedId(tile.key)}
+                />
               </div>
             ))}
           </div>
@@ -102,7 +128,7 @@ export function VideoGrid({
       }`}
     >
       {tiles.map((tile) => (
-        <VideoTile key={tile.key} {...tile} onTogglePin={() => setPinnedId(tile.key)} />
+        <VideoTile key={tile.key} {...tile} onTogglePin={() => setManualPinnedId(tile.key)} />
       ))}
     </div>
   );

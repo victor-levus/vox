@@ -141,6 +141,24 @@ export function registerRoomHandlers(io: Server, socket: Socket): void {
     },
   );
 
+  socket.on(SocketEvents.REACTION, ({ emoji }: { emoji: string }) => {
+    const roomCode = socketToRoom.get(socket.id);
+    if (!roomCode) return;
+    io.to(roomCode).emit(SocketEvents.REACTION, { emoji, userId });
+  });
+
+  socket.on(SocketEvents.SCREEN_SHARE_STARTED, () => {
+    const roomCode = socketToRoom.get(socket.id);
+    if (!roomCode) return;
+    io.to(roomCode).emit(SocketEvents.PARTICIPANT_STATE_UPDATED, { userId, isScreenSharing: true });
+  });
+
+  socket.on(SocketEvents.SCREEN_SHARE_STOPPED, () => {
+    const roomCode = socketToRoom.get(socket.id);
+    if (!roomCode) return;
+    io.to(roomCode).emit(SocketEvents.PARTICIPANT_STATE_UPDATED, { userId, isScreenSharing: false });
+  });
+
   // --- Host controls ---
 
   socket.on(SocketEvents.MUTE_PARTICIPANT, ({ targetUserId }: { targetUserId: string }) => {

@@ -18,6 +18,7 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { toggleChat } from '@/store/slices/chatSlice';
 import { togglePanel } from '@/store/slices/participantsSlice';
 import { cn } from '@/lib/utils';
+import { ReactionPicker } from './ReactionPicker';
 
 interface ControlsProps {
   isAudioEnabled: boolean;
@@ -28,6 +29,7 @@ interface ControlsProps {
   onToggleVideo: () => void;
   onToggleScreenShare: () => Promise<void>;
   onToggleRaiseHand: () => void;
+  onReact: (emoji: string) => void;
   onLeave: () => void;
 }
 
@@ -73,6 +75,7 @@ export function Controls({
   onToggleVideo,
   onToggleScreenShare,
   onToggleRaiseHand,
+  onReact,
   onLeave,
 }: ControlsProps) {
   const dispatch = useAppDispatch();
@@ -133,6 +136,8 @@ export function Controls({
             <BsHandIndex className="h-5 w-5" />
           )}
         </ControlButton>
+
+        <ReactionPicker onReact={onReact} />
 
         <button
           onClick={onLeave}

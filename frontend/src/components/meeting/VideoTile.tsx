@@ -1,8 +1,10 @@
 import { useEffect, useRef } from 'react';
-import { BsMicMuteFill, BsPinAngleFill, BsPinAngle, BsHandIndexFill } from 'react-icons/bs';
+import { BsMicMuteFill, BsPinAngleFill, BsPinAngle, BsHandIndexFill, BsDisplayFill } from 'react-icons/bs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { generateAvatarInitials } from '@/utils';
+import { ReactionOverlay } from './ReactionOverlay';
+import type { Reaction } from './ReactionOverlay';
 
 interface VideoTileProps {
   stream: MediaStream | null;
@@ -11,6 +13,8 @@ interface VideoTileProps {
   isAudioEnabled?: boolean;
   isVideoEnabled?: boolean;
   isHandRaised?: boolean;
+  isScreenSharing?: boolean;
+  reactions?: Reaction[];
   isPinned?: boolean;
   onTogglePin?: () => void;
 }
@@ -22,6 +26,8 @@ export function VideoTile({
   isAudioEnabled = true,
   isVideoEnabled = true,
   isHandRaised = false,
+  isScreenSharing = false,
+  reactions = [],
   isPinned = false,
   onTogglePin,
 }: VideoTileProps) {
@@ -86,6 +92,19 @@ export function VideoTile({
           <BsHandIndexFill className="h-3.5 w-3.5 text-zinc-900" />
         </div>
       )}
+
+      {/* Screen sharing indicator */}
+      {isScreenSharing && (
+        <div
+          className={`absolute right-2 flex h-7 w-7 items-center justify-center rounded-full bg-blue-500 ${
+            !isAudioEnabled && isHandRaised ? 'top-18' : !isAudioEnabled || isHandRaised ? 'top-10' : 'top-2'
+          }`}
+        >
+          <BsDisplayFill className="h-3.5 w-3.5 text-white" />
+        </div>
+      )}
+
+      <ReactionOverlay reactions={reactions} />
 
       {/* Pin button — visible on hover */}
       {onTogglePin && (
