@@ -41,6 +41,9 @@ export const SocketEvents = {
   // Host controls (server → room broadcast — keeps panel in sync for everyone)
   PARTICIPANT_STATE_UPDATED: 'participant-state-updated',
 
+  // Self media state (client → server; server rebroadcasts PARTICIPANT_STATE_UPDATED)
+  MEDIA_STATE_CHANGED: 'media-state-changed',
+
   // Raise hand (server → client broadcast)
   HAND_RAISED: 'hand-raised',
   HAND_LOWERED: 'hand-lowered',

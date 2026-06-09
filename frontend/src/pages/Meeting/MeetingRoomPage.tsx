@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
@@ -63,6 +63,10 @@ function toParticipant(
 export default function MeetingRoomPage() {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const lobbyState = location.state as { isMuted?: boolean; isCameraOff?: boolean } | null;
+  const initialAudioEnabled = !(lobbyState?.isMuted ?? false);
+  const initialVideoEnabled = !(lobbyState?.isCameraOff ?? false);
   const dispatch = useAppDispatch();
   const user = useAppSelector((s) => s.auth.user)!;
   const participants = useAppSelector((s) => s.participants.participants);
@@ -84,7 +88,7 @@ export default function MeetingRoomPage() {
     enableVideo,
     startScreenShare,
     stopScreenShare,
-  } = useMedia();
+  } = useMedia({ initialAudioEnabled, initialVideoEnabled });
 
   const socket = useSocket(code!);
   const { remoteStreams } = useWebRTC(socket, localStream);
@@ -98,6 +102,8 @@ export default function MeetingRoomPage() {
         roomRef.current = { id: room.id, hostId: room.hostId };
         setRoomId(room.id);
         dispatch(joinMeeting({ roomCode: room.code, roomName: room.name, roomId: room.id, hostId: room.hostId }));
+        if (!initialAudioEnabled) dispatch(setMuted(true));
+        if (!initialVideoEnabled) dispatch(setCameraOff(true));
       })
       .catch(() => navigate('/dashboard', { replace: true }));
 
@@ -115,6 +121,14 @@ export default function MeetingRoomPage() {
       const room = roomRef.current;
       if (!room) return;
       dispatch(setParticipants(list.map((p) => toParticipant(p, room.id, room.hostId))));
+      // Tell the room about our initial media state if different from defaults so
+      // other participants' tiles and the host panel show the correct icons.
+      if (!initialAudioEnabled || !initialVideoEnabled) {
+        socket.emit(SocketEvents.MEDIA_STATE_CHANGED, {
+          isAudioEnabled: initialAudioEnabled,
+          isVideoEnabled: initialVideoEnabled,
+        });
+      }
     };
 
     const onUserJoined = (sp: SocketParticipant) => {
@@ -207,11 +221,13 @@ export default function MeetingRoomPage() {
   const handleToggleAudio = () => {
     toggleAudio();
     dispatch(toggleMute());
+    socket?.emit(SocketEvents.MEDIA_STATE_CHANGED, { isAudioEnabled: !isAudioEnabled });
   };
 
   const handleToggleVideo = () => {
     toggleVideo();
     dispatch(toggleCamera());
+    socket?.emit(SocketEvents.MEDIA_STATE_CHANGED, { isVideoEnabled: !isVideoEnabled });
   };
 
   const handleToggleScreenShare = async () => {

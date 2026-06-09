@@ -265,3 +265,27 @@ cd backend && npx prisma studio
 - `CLIENT_URL` in `backend/.env` supports comma-separated origins: `"http://localhost:5173,https://<ngrok-url>"`
 - `app.ts` and `websocket/socket.ts` parse it: `config.CLIENT_URL.split(',').map(o => o.trim())`
 - Socket.io-client: use `io(import.meta.env.VITE_SOCKET_URL || undefined)` — passing `undefined` connects to the current page origin; `''` is unreliable
+
+### Self-initiated media state changes — broadcast pattern
+When a user toggles their own mic/camera, emit `MEDIA_STATE_CHANGED` (client → server); the server handler rebroadcasts `PARTICIPANT_STATE_UPDATED` to the room — the same event host-control actions use. This keeps every client's `participantsSlice` (VideoTile mute icons + ParticipantsPanel) in sync without a separate code path.
+- Emit `{ isAudioEnabled: !current }` / `{ isVideoEnabled: !current }` — just the changed field.
+- Also emit once inside `onParticipantList` (fired after the server confirms join) if the user entered with mic/camera off, so other participants see the correct initial state.
+
+### Passing pre-join lobby state to the meeting room
+The lobby (`LobbyPage`) and the meeting room (`MeetingRoomPage`) are separate routes with separate media streams. Lobby state is **not** shared via Redux — use React Router navigation state:
+```ts
+// LobbyPage — on "Join now"
+navigate(`/room/${code}`, { state: { isMuted, isCameraOff } });
+
+// MeetingRoomPage
+const location = useLocation();
+const lobbyState = location.state as { isMuted?: boolean; isCameraOff?: boolean } | null;
+```
+`useMedia` accepts `{ initialAudioEnabled, initialVideoEnabled }` and applies them to the stream's tracks immediately after `getUserMedia` resolves — before the stream is exposed to the component.
+
+### Prisma filtered relation counts
+Prisma 7 supports `_count` with a `where` filter — use it when you need a conditional count (e.g. active participants only):
+```ts
+_count: { select: { participants: { where: { leftAt: null } } } }
+```
+Without the filter, `_count` counts all rows ever inserted, including soft-deleted/left ones.

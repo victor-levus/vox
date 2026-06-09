@@ -294,7 +294,7 @@ export default function LobbyPage() {
 
           <Button
             className="w-full"
-            onClick={() => navigate(`/room/${code}`)}
+            onClick={() => navigate(`/room/${code}`, { state: { isMuted, isCameraOff } })}
             disabled={!displayName.trim()}
           >
             Join now

@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-export function useMedia() {
+export function useMedia({
+  initialAudioEnabled = true,
+  initialVideoEnabled = true,
+}: { initialAudioEnabled?: boolean; initialVideoEnabled?: boolean } = {}) {
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
-  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+  const [isAudioEnabled, setIsAudioEnabled] = useState(initialAudioEnabled);
+  const [isVideoEnabled, setIsVideoEnabled] = useState(initialVideoEnabled);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
 
   const cameraStreamRef = useRef<MediaStream | null>(null);
@@ -20,6 +23,9 @@ export function useMedia() {
           stream.getTracks().forEach((t) => t.stop());
           return;
         }
+        // Apply lobby preferences to the new stream's tracks before exposing it.
+        if (!initialAudioEnabled) stream.getAudioTracks().forEach((t) => { t.enabled = false; });
+        if (!initialVideoEnabled) stream.getVideoTracks().forEach((t) => { t.enabled = false; });
         cameraStreamRef.current = stream;
         setLocalStream(stream);
       })

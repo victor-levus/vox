@@ -14,6 +14,13 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -49,6 +56,8 @@ export default function DashboardPage() {
   const [roomsLoading, setRoomsLoading] = useState(true);
   const [creatingRoom, setCreatingRoom] = useState(false);
   const [joinCode, setJoinCode] = useState('');
+  const [showNewMeetingDialog, setShowNewMeetingDialog] = useState(false);
+  const [newMeetingName, setNewMeetingName] = useState('');
 
   useEffect(() => {
     meetingService
@@ -59,9 +68,11 @@ export default function DashboardPage() {
   }, []);
 
   const handleNewMeeting = async () => {
+    const name = newMeetingName.trim() || undefined;
     setCreatingRoom(true);
+    setShowNewMeetingDialog(false);
     try {
-      const { room } = await meetingService.createRoom();
+      const { room } = await meetingService.createRoom(name);
       navigate(`/lobby/${room.code}`);
     } catch {
       toast.error('Failed to create meeting');
@@ -121,7 +132,10 @@ export default function DashboardPage() {
           <div className="rounded-lg border bg-card p-5">
             <p className="mb-1 font-medium">New meeting</p>
             <p className="mb-4 text-sm text-muted-foreground">Start an instant video call</p>
-            <Button onClick={handleNewMeeting} disabled={creatingRoom}>
+            <Button
+              onClick={() => { setNewMeetingName(''); setShowNewMeetingDialog(true); }}
+              disabled={creatingRoom}
+            >
               <BsCameraVideo className="mr-2 h-4 w-4" />
               {creatingRoom ? 'Creating…' : 'Start meeting'}
             </Button>
@@ -235,6 +249,34 @@ export default function DashboardPage() {
           )}
         </section>
       </main>
+
+      <Dialog
+        open={showNewMeetingDialog}
+        onOpenChange={(open) => { if (!open) setShowNewMeetingDialog(false); }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>New meeting</DialogTitle>
+          </DialogHeader>
+          <div className="py-2">
+            <Input
+              placeholder="Meeting name (optional)"
+              value={newMeetingName}
+              onChange={(e) => setNewMeetingName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleNewMeeting()}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowNewMeetingDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleNewMeeting}>
+              Create
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

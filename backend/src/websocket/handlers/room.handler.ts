@@ -132,6 +132,15 @@ export function registerRoomHandlers(io: Server, socket: Socket): void {
     io.to(roomCode).emit(SocketEvents.HAND_LOWERED, { userId });
   });
 
+  socket.on(
+    SocketEvents.MEDIA_STATE_CHANGED,
+    (payload: { isAudioEnabled?: boolean; isVideoEnabled?: boolean }) => {
+      const roomCode = socketToRoom.get(socket.id);
+      if (!roomCode) return;
+      io.to(roomCode).emit(SocketEvents.PARTICIPANT_STATE_UPDATED, { userId, ...payload });
+    },
+  );
+
   // --- Host controls ---
 
   socket.on(SocketEvents.MUTE_PARTICIPANT, ({ targetUserId }: { targetUserId: string }) => {

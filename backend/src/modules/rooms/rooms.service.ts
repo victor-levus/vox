@@ -56,7 +56,7 @@ export async function getMyRooms(userId: string) {
     },
     select: {
       ...ROOM_SELECT,
-      _count: { select: { participants: true } },
+      _count: { select: { participants: { where: { leftAt: null } } } },
     },
     orderBy: { createdAt: 'desc' },
   });
@@ -66,9 +66,5 @@ export async function endRoom(roomId: string, userId: string) {
   const room = await prisma.room.findUnique({ where: { id: roomId } });
   if (!room) throw new AppError(404, 'Room not found');
   if (room.hostId !== userId) throw new AppError(403, 'Only the host can end the room');
-  return prisma.room.update({
-    where: { id: roomId },
-    data: { isActive: false },
-    select: ROOM_SELECT,
-  });
+  return prisma.room.delete({ where: { id: roomId }, select: ROOM_SELECT });
 }
