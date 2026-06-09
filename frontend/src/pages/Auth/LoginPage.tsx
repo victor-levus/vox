@@ -8,6 +8,7 @@ import { useAppDispatch } from '@/store';
 import { setUser } from '@/store/slices/authSlice';
 import { authService } from '@/services/auth.service';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { VoxLogo } from '@/components/shared/VoxLogo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -49,9 +50,14 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm space-y-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold tracking-tight">VideoCall</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Sign in to your account</p>
+        <div className="flex flex-col items-center gap-3">
+          <VoxLogo className="h-12 w-12" />
+          <div className="text-center">
+            <h1 className="bg-linear-to-r from-indigo-500 to-violet-500 bg-clip-text text-2xl font-bold tracking-tight text-transparent">
+              Vōx
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">Sign in to your account</p>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

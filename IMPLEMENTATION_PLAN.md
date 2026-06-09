@@ -445,6 +445,17 @@
 
 ---
 
+### Branding & Navbar Polish ✅
+- [x] App renamed **Vōx** (chosen from: Beam, Nexus, Vōx, Convō)
+- [x] `VoxLogo` SVG component (`src/components/shared/VoxLogo.tsx`) — hexagonal aperture + play triangle, indigo→violet gradient, subtle lens ring
+- [x] `public/favicon.svg` replaced with Vōx mark
+- [x] `index.html` `<title>` → `Vōx`
+- [x] `useDocumentTitle` brand suffix updated to `Vōx`
+- [x] Dashboard header modernised: `sticky top-0 z-50 bg-background/80 backdrop-blur-md` glassmorphism, logo mark + gradient wordmark, avatar pill-button opens dropdown (name + email + sign out) — bare "Sign out" button removed
+- [x] Auth pages (Login + Register): `VideoCall` heading replaced with Vōx logo mark + gradient wordmark
+
+---
+
 ## Phase 8 — Future Phases (Post Web App)
 
 ### Step 30 — React Native Mobile App

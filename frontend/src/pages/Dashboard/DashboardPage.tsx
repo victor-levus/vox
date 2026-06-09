@@ -4,6 +4,7 @@ import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
 import { BsCameraVideo, BsLink45Deg, BsMoon, BsPeople, BsSun, BsThreeDots, BsTrash } from 'react-icons/bs';
 import { InviteDialog } from '@/components/meeting/InviteDialog';
+import { VoxLogo } from '@/components/shared/VoxLogo';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { clearAuth } from '@/store/slices/authSlice';
 import { authService } from '@/services/auth.service';
@@ -117,18 +118,23 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <span className="text-lg font-bold">VideoCall</span>
-          <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-muted-foreground sm:block">{user.name}</span>
-            <Avatar className="h-8 w-8">
-              <AvatarFallback className="text-xs">{getInitials(user.name)}</AvatarFallback>
-            </Avatar>
+      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
+        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
+          {/* Wordmark */}
+          <div className="flex items-center gap-2.5">
+            <VoxLogo className="h-7 w-7" />
+            <span className="bg-linear-to-r from-indigo-500 to-violet-500 bg-clip-text text-xl font-bold tracking-tight text-transparent">
+              Vōx
+            </span>
+          </div>
+
+          {/* Right controls */}
+          <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="icon"
               aria-label="Toggle theme"
+              className="h-9 w-9 text-muted-foreground hover:text-foreground"
               onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
             >
               {resolvedTheme === 'dark' ? (
@@ -137,9 +143,35 @@ export default function DashboardPage() {
                 <BsMoon className="h-4 w-4" />
               )}
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              Sign out
-            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="ml-1 flex items-center gap-2.5 rounded-full py-1 pl-1 pr-3 transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label="Account menu"
+                >
+                  <Avatar className="h-8 w-8 ring-2 ring-border">
+                    <AvatarFallback className="bg-linear-to-br from-indigo-500 to-violet-500 text-xs font-semibold text-white">
+                      {getInitials(user.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="hidden text-sm font-medium sm:block">{user.name}</span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <div className="px-3 py-2">
+                  <p className="text-sm font-semibold">{user.name}</p>
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">{user.email}</p>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={handleLogout}
+                >
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
