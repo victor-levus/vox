@@ -18,7 +18,9 @@ export function registerChatHandlers(io: Server, socket: Socket): void {
       const room = await prisma.room.findUnique({ where: { code: roomCode }, select: { id: true } });
       if (!room) return;
 
-      const message = await saveMessage(room.id, userId, content.trim(), type);
+      const sanitized = content.trim().replace(/<[^>]*>/g, '');
+      if (!sanitized) return;
+      const message = await saveMessage(room.id, userId, sanitized, type);
       io.to(roomCode).emit(SocketEvents.NEW_MESSAGE, message);
     },
   );

@@ -1,0 +1,78 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: videocall_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    # Port intentionally not exposed — only backend (on internal network) connects
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - videocall_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: videocall_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}
+      SESSION_COOKIE_SECURE: "true"
+    # Port intentionally not exposed — nginx proxies /api and /socket.io to this container
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - videocall_net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+        VITE_SOCKET_URL: ""
+        VITE_STUN_URL: ${VITE_STUN_URL:-stun:stun.l.google.com:19302}
+        VITE_TURN_URL: ${VITE_TURN_URL:-}
+        VITE_TURN_USERNAME: ${VITE_TURN_USERNAME:-}
+        VITE_TURN_CREDENTIAL: ${VITE_TURN_CREDENTIAL:-}
+    container_name: videocall_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    networks:
+      - videocall_net
+
+  coturn:
+    image: coturn/coturn:latest
+    container_name: videocall_coturn
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./coturn/turnserver.prod.conf:/etc/coturn/turnserver.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    command: -c /etc/coturn/turnserver.conf
+
+volumes:
+  db_data:
+
+networks:
+  videocall_net:
+    driver: bridge

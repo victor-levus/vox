@@ -413,33 +413,35 @@
 
 ---
 
-### Step 28 — Security & Production Hardening
-- [ ] Rate limiting on auth endpoints (`express-rate-limit`): 10 req/min for login, 5 req/min for register
-- [ ] All route inputs validated with Zod (already done per module, final audit)
-- [ ] Session cookie hardened: `httpOnly: true`, `secure: true` (prod), `sameSite: 'lax'`
-- [ ] CORS locked to production domain in env
-- [ ] Socket.io auth rejects all unauthenticated handshakes
-- [ ] Helmet security headers configured
-- [ ] Expired session pruning — a startup interval that deletes `Session` rows where `expiresAt < NOW()` every 30 min
-- [ ] Input sanitisation on chat messages (strip HTML)
-- [ ] File upload size limits if file sharing is added
+### Step 28 — Security & Production Hardening ✅
+- [x] Rate limiting on auth endpoints (`express-rate-limit`): 10 req/15min for login, 5 req/15min for register
+- [x] All route inputs validated with Zod (already done per module, final audit)
+- [x] Session cookie hardened: `httpOnly: true`, `secure: true` (prod), `sameSite: 'lax'` (already in place)
+- [x] CORS locked to production domain in env (already in place)
+- [x] Socket.io auth rejects all unauthenticated handshakes (already in place)
+- [x] Helmet security headers configured (already in place)
+- [x] Expired session pruning — `setInterval` every 30 min deletes `Session` rows where `expiresAt < NOW()` via Prisma in `server.ts`
+- [x] Input sanitisation on chat messages (strip HTML via `/<[^>]*>/g` in `chat.handler.ts`)
+- [ ] File upload size limits if file sharing is added (deferred — no file sharing yet)
 
 ---
 
-### Step 29 — Production Docker Build
-- [ ] Finalise multi-stage `backend/Dockerfile`:
+### Step 29 — Production Docker Build ✅
+- [x] Finalise multi-stage `backend/Dockerfile`:
   - Stage 1: install deps + compile TS
   - Stage 2: copy compiled output + production deps only
-- [ ] Finalise multi-stage `frontend/Dockerfile`:
+- [x] Finalise multi-stage `frontend/Dockerfile`:
   - Stage 1: Vite build
   - Stage 2: Nginx with custom `nginx.conf`
-- [ ] `docker-compose.prod.yml`:
+- [x] `docker-compose.prod.yml`:
   - All services with `restart: unless-stopped`
   - Secrets via env-file (not baked into image)
-  - Internal Docker network (backend not exposed to host)
+  - Internal Docker network (db + backend ports not exposed to host)
   - Named volumes for MySQL data
-- [ ] `coturn` config file for production domain + TLS
-- [ ] Validate full stack boots and all features work inside containers
+  - `SESSION_COOKIE_SECURE=true` injected into backend environment
+  - coturn mounts `turnserver.prod.conf` + `/etc/letsencrypt` read-only
+- [x] `coturn/turnserver.prod.conf` — TLS cert/pkey paths, `external-ip`, `realm` placeholders
+- [ ] Validate full stack boots and all features work inside containers (requires live server)
 
 ---
 
