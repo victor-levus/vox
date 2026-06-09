@@ -4,6 +4,7 @@ interface MeetingState {
   roomCode: string | null;
   roomName: string | null;
   roomId: string | null;
+  hostId: string | null;
   isActive: boolean;
   isMuted: boolean;
   isCameraOff: boolean;
@@ -17,6 +18,7 @@ const initialState: MeetingState = {
   roomCode: null,
   roomName: null,
   roomId: null,
+  hostId: null,
   isActive: false,
   isMuted: false,
   isCameraOff: false,
@@ -30,10 +32,11 @@ const meetingSlice = createSlice({
   name: 'meeting',
   initialState,
   reducers: {
-    joinMeeting(state, action: PayloadAction<{ roomCode: string; roomName: string; roomId: string }>) {
+    joinMeeting(state, action: PayloadAction<{ roomCode: string; roomName: string; roomId: string; hostId: string }>) {
       state.roomCode = action.payload.roomCode;
       state.roomName = action.payload.roomName;
       state.roomId = action.payload.roomId;
+      state.hostId = action.payload.hostId;
       state.isActive = true;
       state.joinedAt = new Date().toISOString();
     },
@@ -55,6 +58,15 @@ const meetingSlice = createSlice({
     toggleHandRaise(state) {
       state.isHandRaised = !state.isHandRaised;
     },
+    setMuted(state, action: PayloadAction<boolean>) {
+      state.isMuted = action.payload;
+    },
+    setCameraOff(state, action: PayloadAction<boolean>) {
+      state.isCameraOff = action.payload;
+    },
+    setHost(state, action: PayloadAction<string>) {
+      state.hostId = action.payload;
+    },
   },
 });
 
@@ -66,5 +78,8 @@ export const {
   setScreenSharing,
   setRecording,
   toggleHandRaise,
+  setMuted,
+  setCameraOff,
+  setHost,
 } = meetingSlice.actions;
 export default meetingSlice.reducer;

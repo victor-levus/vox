@@ -11,6 +11,8 @@ import {
   BsChatDotsFill,
   BsPeople,
   BsPeopleFill,
+  BsHandIndex,
+  BsHandIndexFill,
 } from 'react-icons/bs';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { toggleChat } from '@/store/slices/chatSlice';
@@ -21,9 +23,11 @@ interface ControlsProps {
   isAudioEnabled: boolean;
   isVideoEnabled: boolean;
   isScreenSharing: boolean;
+  isHandRaised: boolean;
   onToggleAudio: () => void;
   onToggleVideo: () => void;
   onToggleScreenShare: () => Promise<void>;
+  onToggleRaiseHand: () => void;
   onLeave: () => void;
 }
 
@@ -64,9 +68,11 @@ export function Controls({
   isAudioEnabled,
   isVideoEnabled,
   isScreenSharing,
+  isHandRaised,
   onToggleAudio,
   onToggleVideo,
   onToggleScreenShare,
+  onToggleRaiseHand,
   onLeave,
 }: ControlsProps) {
   const dispatch = useAppDispatch();
@@ -113,6 +119,18 @@ export function Controls({
             <BsDisplayFill className="h-5 w-5" />
           ) : (
             <BsDisplay className="h-5 w-5" />
+          )}
+        </ControlButton>
+
+        <ControlButton
+          onClick={onToggleRaiseHand}
+          title={isHandRaised ? 'Lower hand' : 'Raise hand'}
+          variant={isHandRaised ? 'highlight' : 'neutral'}
+        >
+          {isHandRaised ? (
+            <BsHandIndexFill className="h-5 w-5" />
+          ) : (
+            <BsHandIndex className="h-5 w-5" />
           )}
         </ControlButton>
 

@@ -1,11 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { joinMeeting, leaveMeeting, toggleMute, toggleCamera } from '@/store/slices/meetingSlice';
+import {
+  joinMeeting,
+  leaveMeeting,
+  toggleMute,
+  toggleCamera,
+  toggleHandRaise,
+  setMuted,
+  setCameraOff,
+  setHost,
+} from '@/store/slices/meetingSlice';
 import {
   setParticipants,
   addParticipant,
   removeParticipant,
+  updateParticipant,
+  transferHost,
   resetParticipants,
 } from '@/store/slices/participantsSlice';
 import { resetChat } from '@/store/slices/chatSlice';
@@ -54,6 +66,7 @@ export default function MeetingRoomPage() {
   const dispatch = useAppDispatch();
   const user = useAppSelector((s) => s.auth.user)!;
   const participants = useAppSelector((s) => s.participants.participants);
+  const isHandRaised = useAppSelector((s) => s.meeting.isHandRaised);
 
   const roomRef = useRef<{ id: string; hostId: string } | null>(null);
   const [roomId, setRoomId] = useState<string | null>(null);
@@ -65,6 +78,10 @@ export default function MeetingRoomPage() {
     isScreenSharing,
     toggleAudio,
     toggleVideo,
+    muteAudio,
+    unmuteAudio,
+    disableVideo,
+    enableVideo,
     startScreenShare,
     stopScreenShare,
   } = useMedia();
@@ -80,7 +97,7 @@ export default function MeetingRoomPage() {
       .then(({ room }) => {
         roomRef.current = { id: room.id, hostId: room.hostId };
         setRoomId(room.id);
-        dispatch(joinMeeting({ roomCode: room.code, roomName: room.name, roomId: room.id }));
+        dispatch(joinMeeting({ roomCode: room.code, roomName: room.name, roomId: room.id, hostId: room.hostId }));
       })
       .catch(() => navigate('/dashboard', { replace: true }));
 
@@ -110,16 +127,82 @@ export default function MeetingRoomPage() {
       dispatch(removeParticipant(userId));
     };
 
+    const onHandRaised = ({ userId }: { userId: string }) => {
+      dispatch(updateParticipant({ userId, isHandRaised: true }));
+    };
+
+    const onHandLowered = ({ userId }: { userId: string }) => {
+      dispatch(updateParticipant({ userId, isHandRaised: false }));
+    };
+
+    const onYouWereMuted = () => {
+      muteAudio();
+      dispatch(setMuted(true));
+      toast.info('You were muted by the host');
+    };
+
+    const onYouWereUnmuted = () => {
+      unmuteAudio();
+      dispatch(setMuted(false));
+      toast.info('You were unmuted by the host');
+    };
+
+    const onYourVideoWasDisabled = () => {
+      disableVideo();
+      dispatch(setCameraOff(true));
+      toast.info('Your camera was turned off by the host');
+    };
+
+    const onYourVideoWasEnabled = () => {
+      enableVideo();
+      dispatch(setCameraOff(false));
+      toast.info('Your camera was turned on by the host');
+    };
+
+    const onYouWereRemoved = () => {
+      toast.error('You were removed from the meeting');
+      navigate('/dashboard', { replace: true });
+    };
+
+    const onHostChanged = ({ newHostUserId }: { newHostUserId: string }) => {
+      dispatch(transferHost({ newHostUserId }));
+      dispatch(setHost(newHostUserId));
+    };
+
+    const onParticipantStateUpdated = (
+      update: { userId: string; isAudioEnabled?: boolean; isVideoEnabled?: boolean },
+    ) => {
+      dispatch(updateParticipant(update));
+    };
+
     socket.on(SocketEvents.PARTICIPANT_LIST, onParticipantList);
     socket.on(SocketEvents.USER_JOINED, onUserJoined);
     socket.on(SocketEvents.USER_LEFT, onUserLeft);
+    socket.on(SocketEvents.HAND_RAISED, onHandRaised);
+    socket.on(SocketEvents.HAND_LOWERED, onHandLowered);
+    socket.on(SocketEvents.YOU_WERE_MUTED, onYouWereMuted);
+    socket.on(SocketEvents.YOU_WERE_UNMUTED, onYouWereUnmuted);
+    socket.on(SocketEvents.YOUR_VIDEO_WAS_DISABLED, onYourVideoWasDisabled);
+    socket.on(SocketEvents.YOUR_VIDEO_WAS_ENABLED, onYourVideoWasEnabled);
+    socket.on(SocketEvents.YOU_WERE_REMOVED, onYouWereRemoved);
+    socket.on(SocketEvents.HOST_CHANGED, onHostChanged);
+    socket.on(SocketEvents.PARTICIPANT_STATE_UPDATED, onParticipantStateUpdated);
 
     return () => {
       socket.off(SocketEvents.PARTICIPANT_LIST, onParticipantList);
       socket.off(SocketEvents.USER_JOINED, onUserJoined);
       socket.off(SocketEvents.USER_LEFT, onUserLeft);
+      socket.off(SocketEvents.HAND_RAISED, onHandRaised);
+      socket.off(SocketEvents.HAND_LOWERED, onHandLowered);
+      socket.off(SocketEvents.YOU_WERE_MUTED, onYouWereMuted);
+      socket.off(SocketEvents.YOU_WERE_UNMUTED, onYouWereUnmuted);
+      socket.off(SocketEvents.YOUR_VIDEO_WAS_DISABLED, onYourVideoWasDisabled);
+      socket.off(SocketEvents.YOUR_VIDEO_WAS_ENABLED, onYourVideoWasEnabled);
+      socket.off(SocketEvents.YOU_WERE_REMOVED, onYouWereRemoved);
+      socket.off(SocketEvents.HOST_CHANGED, onHostChanged);
+      socket.off(SocketEvents.PARTICIPANT_STATE_UPDATED, onParticipantStateUpdated);
     };
-  }, [socket, dispatch]);
+  }, [socket, dispatch, navigate, muteAudio, unmuteAudio, disableVideo, enableVideo]);
 
   const handleToggleAudio = () => {
     toggleAudio();
@@ -139,6 +222,16 @@ export default function MeetingRoomPage() {
     }
   };
 
+  const handleToggleRaiseHand = () => {
+    if (!socket) return;
+    if (isHandRaised) {
+      socket.emit(SocketEvents.LOWER_HAND);
+    } else {
+      socket.emit(SocketEvents.RAISE_HAND);
+    }
+    dispatch(toggleHandRaise());
+  };
+
   const handleLeave = () => {
     navigate('/dashboard', { replace: true });
   };
@@ -152,11 +245,12 @@ export default function MeetingRoomPage() {
             localUser={user}
             isLocalAudioEnabled={isAudioEnabled}
             isLocalVideoEnabled={isVideoEnabled}
+            isLocalHandRaised={isHandRaised}
             remoteStreams={remoteStreams}
             participants={participants}
           />
         </div>
-        <ParticipantsPanel />
+        <ParticipantsPanel socket={socket} />
         <ChatPanel onSend={sendMessage} onTyping={setTyping} />
       </div>
 
@@ -164,9 +258,11 @@ export default function MeetingRoomPage() {
         isAudioEnabled={isAudioEnabled}
         isVideoEnabled={isVideoEnabled}
         isScreenSharing={isScreenSharing}
+        isHandRaised={isHandRaised}
         onToggleAudio={handleToggleAudio}
         onToggleVideo={handleToggleVideo}
         onToggleScreenShare={handleToggleScreenShare}
+        onToggleRaiseHand={handleToggleRaiseHand}
         onLeave={handleLeave}
       />
     </div>

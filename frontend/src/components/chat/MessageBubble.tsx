@@ -12,9 +12,6 @@ export function MessageBubble({ message }: { message: Message }) {
     hour12: false,
   }).format(new Date(message.createdAt));
 
-  console.log(currentUserId);
-  console.log(message);
-
   if (isOwn) {
     return (
       <div className="ml-auto flex max-w-[85%] flex-col items-end gap-1 ">

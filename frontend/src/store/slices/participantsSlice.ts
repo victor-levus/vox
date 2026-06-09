@@ -33,6 +33,11 @@ const participantsSlice = createSlice({
     togglePanel(state) {
       state.isOpen = !state.isOpen;
     },
+    transferHost(state, action: PayloadAction<{ newHostUserId: string }>) {
+      state.participants.forEach((p) => {
+        p.role = p.userId === action.payload.newHostUserId ? 'host' : 'guest';
+      });
+    },
     resetParticipants() {
       return { ...initialState };
     },
@@ -44,6 +49,7 @@ export const {
   addParticipant,
   removeParticipant,
   updateParticipant,
+  transferHost,
   togglePanel,
   resetParticipants,
 } = participantsSlice.actions;

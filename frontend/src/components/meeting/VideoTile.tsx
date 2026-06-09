@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { BsMicMuteFill, BsPinAngleFill, BsPinAngle } from 'react-icons/bs';
+import { BsMicMuteFill, BsPinAngleFill, BsPinAngle, BsHandIndexFill } from 'react-icons/bs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { generateAvatarInitials } from '@/utils';
@@ -10,6 +10,7 @@ interface VideoTileProps {
   isLocal?: boolean;
   isAudioEnabled?: boolean;
   isVideoEnabled?: boolean;
+  isHandRaised?: boolean;
   isPinned?: boolean;
   onTogglePin?: () => void;
 }
@@ -20,6 +21,7 @@ export function VideoTile({
   isLocal = false,
   isAudioEnabled = true,
   isVideoEnabled = true,
+  isHandRaised = false,
   isPinned = false,
   onTogglePin,
 }: VideoTileProps) {
@@ -30,6 +32,9 @@ export function VideoTile({
     if (!video) return;
     video.srcObject = stream;
     if (stream) video.play().catch((err: unknown) => console.error('[VideoTile] play() failed:', err));
+    return () => {
+      video.srcObject = null;
+    };
   }, [stream]);
 
   const showVideo = isVideoEnabled && stream !== null;
@@ -57,7 +62,7 @@ export function VideoTile({
       )}
 
       {/* Gradient + name label */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-3 pb-2 pt-6">
+      <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/70 to-transparent px-3 pb-2 pt-6">
         <span className="text-sm font-medium text-white drop-shadow">{name}</span>
       </div>
 
@@ -72,6 +77,13 @@ export function VideoTile({
       {!isAudioEnabled && (
         <div className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-destructive">
           <BsMicMuteFill className="h-3.5 w-3.5 text-white" />
+        </div>
+      )}
+
+      {/* Raised hand indicator — stacked below muted icon */}
+      {isHandRaised && (
+        <div className={`absolute right-2 flex h-7 w-7 items-center justify-center rounded-full bg-yellow-400 ${!isAudioEnabled ? 'top-10' : 'top-2'}`}>
+          <BsHandIndexFill className="h-3.5 w-3.5 text-zinc-900" />
         </div>
       )}
 

@@ -302,21 +302,33 @@
 
 ---
 
-### Step 21 — Host Controls & Raise Hand
-- [ ] `components/meeting/ParticipantsPanel.tsx` — extend existing panel:
+### Step 21 — Host Controls & Raise Hand ✅
+- [x] `components/meeting/ParticipantsPanel.tsx` — extend existing panel:
   - Raised hand indicator per participant (hand icon, sorted to top of list)
   - Host-only three-dot menu per participant:
-    - Mute participant — emit `mute-participant { targetUserId }` socket event
-    - Remove from meeting — emit `remove-participant { targetUserId }`, target socket disconnects
-    - Transfer host role — emit `transfer-host { targetUserId }`
-- [ ] Backend socket handlers for host controls (`room.handler.ts`):
-  - `mute-participant` — verify emitter is host, emit `you-were-muted` to target socket
-  - `remove-participant` — verify host, disconnect target socket from room
+    - Mute / Unmute microphone — context-sensitive label based on `isAudioEnabled` state
+    - Disable / Enable camera — context-sensitive label based on `isVideoEnabled` state
+    - Make host — emit `transfer-host { targetUserId }`
+    - Remove from meeting — emit `remove-participant { targetUserId }`, target navigates away
+- [x] Backend socket handlers for host controls (`room.handler.ts`):
+  - `mute-participant` / `unmute-participant` — verify host, emit `you-were-muted` / `you-were-unmuted` to target + `participant-state-updated` broadcast to room
+  - `disable-participant-video` / `enable-participant-video` — verify host, emit direct event to target + room broadcast
+  - `remove-participant` — verify host, emit `you-were-removed` to target (client navigates away)
   - `transfer-host` — verify host, update in-memory map + emit `host-changed` to room
-- [ ] `raise-hand` / `lower-hand` socket events:
-  - Frontend emits on toolbar button press; backend broadcasts `hand-raised { userId }` / `hand-lowered { userId }`
+  - `roomHostUserIds` map tracks current host per room; updated on transfer; seeded from DB on first join
+- [x] `raise-hand` / `lower-hand` socket events:
+  - Controls toolbar raise hand button (BsHandIndex/Fill, blue when raised)
+  - Backend broadcasts `hand-raised { userId }` / `hand-lowered { userId }` to room
   - `participantsSlice.updateParticipant` sets `isHandRaised`; panel sorts raised-hand users to top
-  - Hand icon badge on their `VideoTile`
+  - Yellow hand badge on `VideoTile` (stacked below muted indicator)
+- [x] `meetingSlice`: added `hostId`, `setHost`, `setMuted`, `setCameraOff`; `participantsSlice`: added `transferHost`
+- [x] `useMedia`: added `muteAudio`, `unmuteAudio`, `disableVideo`, `enableVideo`
+- [x] `PARTICIPANT_STATE_UPDATED` broadcast keeps every participant's mic/video status live in the panel for all room members
+
+**Bug fixes applied post-Step 21:**
+- Camera/mic indicator stays on after leaving: `VideoTile` useEffect now clears `video.srcObject = null` in cleanup; `LobbyPage` also clears `videoRef.current.srcObject = null` before stopping tracks. Root cause: browsers hold hardware open as long as any `<video>` has `srcObject` set, even after `track.stop()`.
+- React StrictMode double-mount leak: `useMedia` now uses a `cancelled` flag; `LobbyPage` uses a `mountedRef`. If `getUserMedia` resolves after cleanup, the stream is stopped immediately on arrival.
+- Tailwind v4 rename: `bg-gradient-to-t` → `bg-linear-to-t` applied in VideoTile.
 
 ---
 

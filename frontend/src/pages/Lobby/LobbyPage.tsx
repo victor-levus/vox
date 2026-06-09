@@ -43,6 +43,7 @@ export default function LobbyPage() {
 
   const streamRef = useRef<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const mountedRef = useRef(true);
 
   // Fetch room info
   useEffect(() => {
@@ -60,12 +61,18 @@ export default function LobbyPage() {
   // Start or restart the preview stream
   const startStream = async (videoId?: string, audioId?: string, muted = false) => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
     setMediaError(false);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: videoId ? { deviceId: { exact: videoId } } : true,
         audio: audioId ? { deviceId: { exact: audioId } } : true,
       });
+      if (!mountedRef.current) {
+        // Component unmounted before getUserMedia resolved — release hardware.
+        stream.getTracks().forEach((t) => t.stop());
+        return;
+      }
       streamRef.current = stream;
       stream.getAudioTracks().forEach((t) => {
         t.enabled = !muted;
@@ -74,6 +81,7 @@ export default function LobbyPage() {
 
       // Device labels only become available after permission is granted
       const devices = await navigator.mediaDevices.enumerateDevices();
+      if (!mountedRef.current) return;
       const cams = devices.filter((d) => d.kind === 'videoinput');
       const micsDevs = devices.filter((d) => d.kind === 'audioinput');
       setCameras(cams);
@@ -81,16 +89,22 @@ export default function LobbyPage() {
       if (!videoId && cams[0]) setSelectedCamera(cams[0].deviceId);
       if (!audioId && micsDevs[0]) setSelectedMic(micsDevs[0].deviceId);
     } catch {
-      setMediaError(true);
-      setIsCameraOff(true);
+      if (mountedRef.current) {
+        setMediaError(true);
+        setIsCameraOff(true);
+      }
     }
   };
 
   // Start preview on mount, stop all tracks on unmount
   useEffect(() => {
+    mountedRef.current = true;
     startStream();
     return () => {
+      mountedRef.current = false;
+      if (videoRef.current) videoRef.current.srcObject = null;
       streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

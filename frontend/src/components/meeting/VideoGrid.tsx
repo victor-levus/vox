@@ -9,6 +9,7 @@ interface TileData {
   isLocal: boolean;
   isAudioEnabled: boolean;
   isVideoEnabled: boolean;
+  isHandRaised: boolean;
 }
 
 interface VideoGridProps {
@@ -16,6 +17,7 @@ interface VideoGridProps {
   localUser: User;
   isLocalAudioEnabled: boolean;
   isLocalVideoEnabled: boolean;
+  isLocalHandRaised: boolean;
   remoteStreams: Map<string, MediaStream>;
   participants: Participant[];
 }
@@ -33,6 +35,7 @@ export function VideoGrid({
   localUser,
   isLocalAudioEnabled,
   isLocalVideoEnabled,
+  isLocalHandRaised,
   remoteStreams,
   participants,
 }: VideoGridProps) {
@@ -47,6 +50,7 @@ export function VideoGrid({
         isLocal: true,
         isAudioEnabled: isLocalAudioEnabled,
         isVideoEnabled: isLocalVideoEnabled,
+        isHandRaised: isLocalHandRaised,
       },
     ];
 
@@ -59,11 +63,12 @@ export function VideoGrid({
         isLocal: false,
         isAudioEnabled: p?.isAudioEnabled ?? true,
         isVideoEnabled: p?.isVideoEnabled ?? true,
+        isHandRaised: p?.isHandRaised ?? false,
       });
     }
 
     return list;
-  }, [localStream, localUser, isLocalAudioEnabled, isLocalVideoEnabled, remoteStreams, participants]);
+  }, [localStream, localUser, isLocalAudioEnabled, isLocalVideoEnabled, isLocalHandRaised, remoteStreams, participants]);
 
   const count = tiles.length;
   const pinnedTile = pinnedId ? tiles.find((t) => t.key === pinnedId) ?? null : null;

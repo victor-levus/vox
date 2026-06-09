@@ -10,19 +10,29 @@ export function useMedia() {
   const screenStreamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     navigator.mediaDevices
       .getUserMedia({ video: true, audio: true })
       .then((stream) => {
+        if (cancelled) {
+          // Cleanup ran before the promise resolved — release hardware immediately.
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
         cameraStreamRef.current = stream;
         setLocalStream(stream);
       })
       .catch((err: unknown) => {
-        console.error('[useMedia] getUserMedia failed:', err);
+        if (!cancelled) console.error('[useMedia] getUserMedia failed:', err);
       });
 
     return () => {
+      cancelled = true;
       cameraStreamRef.current?.getTracks().forEach((t) => t.stop());
       screenStreamRef.current?.getTracks().forEach((t) => t.stop());
+      cameraStreamRef.current = null;
+      screenStreamRef.current = null;
     };
   }, []);
 
@@ -67,6 +77,26 @@ export function useMedia() {
     }
   }, [stopScreenShare]);
 
+  const muteAudio = useCallback(() => {
+    cameraStreamRef.current?.getAudioTracks().forEach((t) => { t.enabled = false; });
+    setIsAudioEnabled(false);
+  }, []);
+
+  const unmuteAudio = useCallback(() => {
+    cameraStreamRef.current?.getAudioTracks().forEach((t) => { t.enabled = true; });
+    setIsAudioEnabled(true);
+  }, []);
+
+  const disableVideo = useCallback(() => {
+    cameraStreamRef.current?.getVideoTracks().forEach((t) => { t.enabled = false; });
+    setIsVideoEnabled(false);
+  }, []);
+
+  const enableVideo = useCallback(() => {
+    cameraStreamRef.current?.getVideoTracks().forEach((t) => { t.enabled = true; });
+    setIsVideoEnabled(true);
+  }, []);
+
   return {
     localStream,
     isAudioEnabled,
@@ -74,6 +104,10 @@ export function useMedia() {
     isScreenSharing,
     toggleAudio,
     toggleVideo,
+    muteAudio,
+    unmuteAudio,
+    disableVideo,
+    enableVideo,
     startScreenShare,
     stopScreenShare,
   };
