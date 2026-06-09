@@ -59,8 +59,9 @@ function ControlButton({
     <button
       onClick={onClick}
       title={title}
+      aria-label={title}
       className={cn(
-        'flex h-12 w-12 items-center justify-center rounded-full text-white transition-colors',
+        'flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white transition-colors sm:h-12 sm:w-12',
         variant === 'neutral' && 'bg-zinc-700 hover:bg-zinc-600',
         variant === 'danger' && 'bg-destructive hover:bg-destructive/90',
         variant === 'highlight' && 'bg-blue-600 hover:bg-blue-700',
@@ -93,10 +94,24 @@ export function Controls({
   const isParticipantsOpen = useAppSelector((s) => s.participants.isOpen);
   const isSettingsOpen = useAppSelector((s) => s.ui.isSettingsOpen);
 
+  const handleToggleChat = () => {
+    if (!isChatOpen && isParticipantsOpen && window.innerWidth < 640) {
+      dispatch(togglePanel());
+    }
+    dispatch(toggleChat());
+  };
+
+  const handleToggleParticipants = () => {
+    if (!isParticipantsOpen && isChatOpen && window.innerWidth < 640) {
+      dispatch(toggleChat());
+    }
+    dispatch(togglePanel());
+  };
+
   return (
-    <div className="flex shrink-0 items-center bg-zinc-900 px-4 py-3">
+    <div className="flex shrink-0 items-center overflow-x-auto bg-zinc-900 px-2 py-3 sm:px-4">
       {/* Left — REC indicator */}
-      <div className="flex flex-1 items-center">
+      <div className="hidden flex-1 items-center sm:flex">
         {isRecording && (
           <div className="flex items-center gap-1.5 rounded-full bg-zinc-800 px-3 py-1.5">
             <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />
@@ -106,7 +121,7 @@ export function Controls({
       </div>
 
       {/* Center — primary controls */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         <ControlButton
           onClick={onToggleAudio}
           title={isAudioEnabled ? 'Mute' : 'Unmute'}
@@ -160,15 +175,16 @@ export function Controls({
         <button
           onClick={onLeave}
           title="Leave meeting"
-          className="flex h-12 w-28 items-center justify-center gap-2 rounded-full bg-destructive text-sm font-medium text-white transition-colors hover:bg-destructive/90"
+          aria-label="Leave meeting"
+          className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-destructive px-3 text-sm font-medium text-white transition-colors hover:bg-destructive/90 sm:h-12 sm:w-28 sm:px-0"
         >
-          <BsTelephoneXFill className="h-4 w-4" />
-          Leave
+          <BsTelephoneXFill className="h-4 w-4 shrink-0" />
+          <span className="hidden sm:inline">Leave</span>
         </button>
       </div>
 
       {/* Right — record (host only) + panel toggles */}
-      <div className="flex flex-1 items-center justify-end gap-2">
+      <div className="flex flex-1 items-center justify-end gap-1 sm:gap-2">
         {isHost && (
           <ControlButton
             onClick={onToggleRecording}
@@ -184,7 +200,7 @@ export function Controls({
         )}
         <div className="relative">
           <ControlButton
-            onClick={() => dispatch(toggleChat())}
+            onClick={handleToggleChat}
             title={isChatOpen ? 'Close chat' : 'Open chat'}
             variant={isChatOpen ? 'neutral' : 'ghost'}
           >
@@ -202,7 +218,7 @@ export function Controls({
         </div>
 
         <ControlButton
-          onClick={() => dispatch(togglePanel())}
+          onClick={handleToggleParticipants}
           title={isParticipantsOpen ? 'Close participants' : 'Show participants'}
           variant={isParticipantsOpen ? 'neutral' : 'ghost'}
         >

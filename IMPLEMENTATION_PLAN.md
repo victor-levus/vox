@@ -393,18 +393,23 @@
 
 ## Phase 7 — Polish & Deployment
 
-### Step 27 — Notifications & UX Polish
-- [ ] Toast notifications (shadcn Toaster) for:
-  - Participant join / leave
-  - Host ended meeting
-  - You were muted by host
+### Step 27 — Notifications & UX Polish ✅
+- [x] Toast notifications (shadcn Toaster) for:
+  - Participant join / leave (`toast.info` in `onUserJoined` / `onUserLeft` via `participantsRef`)
+  - Host ended meeting (`MEETING_ENDED` socket event → `toast.info` + navigate)
+  - You were muted / unmuted / camera disabled / enabled by host
   - Invite sent / copy link success
-  - Error states
-- [ ] Loading skeletons for Dashboard room list and Participants Panel
-- [ ] Responsive layout audit for mobile browser (no RN yet, but browser on phone)
-- [ ] Keyboard navigation + ARIA labels on all interactive controls
-- [ ] Dark mode via Tailwind `dark:` classes + `prefers-color-scheme` detection
-- [ ] Page `<title>` updates per route (meeting room shows room name)
+  - Error states (failed to load, failed to create, etc.)
+- [x] Loading skeletons for Dashboard room list and Participants Panel (`isLoading` in `participantsSlice`, skeleton rows until `PARTICIPANT_LIST` arrives)
+- [x] Responsive layout audit for mobile browser
+  - Controls bar: `h-10 sm:h-12` buttons, `overflow-x-auto`, REC indicator hidden on mobile, Leave text hidden on mobile
+  - ParticipantsPanel + ChatPanel: `absolute inset-0 z-30` overlay on mobile, side panel on `sm+`; mutual exclusion via `window.innerWidth < 640` in Controls
+  - VideoGrid: `grid-cols-1` on mobile, `auto-rows-fr` fills height with no scroll; `getGridClasses` responsive column counts (2→3→4→5 cols across sm/md/lg/xl); VideoTile icons/avatar/text scaled with `sm:` variants
+  - ReactionPicker popup: `createPortal` to `document.body` with `position: fixed` + `getBoundingClientRect` — escapes `overflow-x-auto` clipping
+- [x] Keyboard navigation + ARIA labels on all interactive controls (`aria-label` on ControlButton, ReactionPicker, ChatPanel close, ParticipantsPanel invite/close; `aria-expanded` on picker)
+- [x] Dark mode via `next-themes` `ThemeProvider` (`attribute="class"`, `defaultTheme="system"`); sun/moon toggle on Dashboard using `useTheme`
+- [x] Page `<title>` updates — `useDocumentTitle` hook; Sign In / Sign Up / Lobby·Name / RoomName / VideoCall per route
+- [x] Host "End meeting for all" — `END_MEETING` / `MEETING_ENDED` socket events; backend marks room inactive; host Leave button shows dialog with "Leave" vs "End for everyone"
 
 ---
 

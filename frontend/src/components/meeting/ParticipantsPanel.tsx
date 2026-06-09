@@ -16,6 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { togglePanel } from '@/store/slices/participantsSlice';
 import { SocketEvents } from '@/types';
@@ -32,6 +33,7 @@ export function ParticipantsPanel({ socket, roomId, roomCode }: ParticipantsPane
   const dispatch = useAppDispatch();
   const isOpen = useAppSelector((s) => s.participants.isOpen);
   const participants = useAppSelector((s) => s.participants.participants);
+  const isLoading = useAppSelector((s) => s.participants.isLoading);
   const currentUserId = useAppSelector((s) => s.auth.user?.id);
   const hostId = useAppSelector((s) => s.meeting.hostId);
   const isCurrentUserHost = hostId === currentUserId;
@@ -48,7 +50,7 @@ export function ParticipantsPanel({ socket, roomId, roomCode }: ParticipantsPane
 
   return (
     <>
-      <div className="flex h-full w-72 shrink-0 flex-col border-l border-zinc-800 bg-zinc-900">
+      <div className="absolute inset-0 z-30 flex flex-col bg-zinc-900 sm:relative sm:inset-auto sm:h-full sm:w-72 sm:shrink-0 sm:border-l sm:border-zinc-800">
         <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
           <h2 className="text-sm font-semibold text-white">
             Participants ({participants.length})
@@ -57,12 +59,15 @@ export function ParticipantsPanel({ socket, roomId, roomCode }: ParticipantsPane
             <button
               onClick={() => setInviteOpen(true)}
               title="Invite people"
+              aria-label="Invite people"
               className="rounded-full p-1 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
             >
               <BsPersonPlus className="h-4 w-4" />
             </button>
             <button
               onClick={() => dispatch(togglePanel())}
+              title="Close participants panel"
+              aria-label="Close participants panel"
               className="rounded-full p-1 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
             >
               <BsXLg className="h-4 w-4" />
@@ -71,15 +76,29 @@ export function ParticipantsPanel({ socket, roomId, roomCode }: ParticipantsPane
         </div>
 
         <div className="flex-1 overflow-y-auto p-2">
-          {sorted.map((p) => (
-            <ParticipantRow
-              key={p.id}
-              participant={p}
-              isCurrentUserHost={isCurrentUserHost}
-              isSelf={p.userId === currentUserId}
-              socket={socket}
-            />
-          ))}
+          {isLoading ? (
+            <div className="space-y-1 p-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-3 px-2 py-2">
+                  <Skeleton className="h-9 w-9 shrink-0 rounded-full bg-zinc-700" />
+                  <div className="flex-1 space-y-1.5">
+                    <Skeleton className="h-3 w-28 bg-zinc-700" />
+                    <Skeleton className="h-2.5 w-16 bg-zinc-700" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            sorted.map((p) => (
+              <ParticipantRow
+                key={p.id}
+                participant={p}
+                isCurrentUserHost={isCurrentUserHost}
+                isSelf={p.userId === currentUserId}
+                socket={socket}
+              />
+            ))
+          )}
         </div>
       </div>
 

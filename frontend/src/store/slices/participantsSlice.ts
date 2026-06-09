@@ -4,11 +4,13 @@ import type { Participant } from '@/types';
 interface ParticipantsState {
   participants: Participant[];
   isOpen: boolean;
+  isLoading: boolean;
 }
 
 const initialState: ParticipantsState = {
   participants: [],
   isOpen: false,
+  isLoading: true,
 };
 
 const participantsSlice = createSlice({
@@ -17,6 +19,7 @@ const participantsSlice = createSlice({
   reducers: {
     setParticipants(state, action: PayloadAction<Participant[]>) {
       state.participants = action.payload;
+      state.isLoading = false;
     },
     addParticipant(state, action: PayloadAction<Participant>) {
       if (!state.participants.find((p) => p.userId === action.payload.userId)) {

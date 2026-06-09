@@ -235,6 +235,22 @@ export function registerRoomHandlers(io: Server, socket: Socket): void {
     io.to(roomCode).emit(SocketEvents.HOST_CHANGED, { newHostUserId: targetUserId });
   });
 
+  // --- End meeting (host only) ---
+
+  socket.on(SocketEvents.END_MEETING, async () => {
+    const roomCode = socketToRoom.get(socket.id);
+    if (!roomCode) return;
+    if (roomHostUserIds.get(roomCode) !== userId) return;
+
+    // Notify all other participants first, then mark room inactive
+    socket.to(roomCode).emit(SocketEvents.MEETING_ENDED);
+
+    const room = await prisma.room.findUnique({ where: { code: roomCode }, select: { id: true } });
+    if (room) {
+      await prisma.room.update({ where: { id: room.id }, data: { isActive: false } });
+    }
+  });
+
   // --- Recording (host only) ---
 
   socket.on(SocketEvents.RECORDING_STARTED, () => {

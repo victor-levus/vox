@@ -119,4 +119,8 @@ export const SocketEvents = {
   // Recording
   RECORDING_STARTED: 'recording-started',
   RECORDING_STOPPED: 'recording-stopped',
+
+  // Meeting end (host only)
+  END_MEETING: 'end-meeting',     // client → server
+  MEETING_ENDED: 'meeting-ended', // server → room broadcast
 } as const;

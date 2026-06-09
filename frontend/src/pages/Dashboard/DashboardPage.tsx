@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
-import { BsCameraVideo, BsLink45Deg, BsPeople, BsThreeDots, BsTrash } from 'react-icons/bs';
+import { BsCameraVideo, BsLink45Deg, BsMoon, BsPeople, BsSun, BsThreeDots, BsTrash } from 'react-icons/bs';
 import { InviteDialog } from '@/components/meeting/InviteDialog';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { clearAuth } from '@/store/slices/authSlice';
 import { authService } from '@/services/auth.service';
 import { meetingService } from '@/services/meeting.service';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import type { Room } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,9 +51,11 @@ function getInitials(name: string): string {
 }
 
 export default function DashboardPage() {
+  useDocumentTitle('');
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const user = useAppSelector((s) => s.auth.user)!;
+  const { resolvedTheme, setTheme } = useTheme();
 
   const [rooms, setRooms] = useState<RoomWithCount[]>([]);
   const [roomsLoading, setRoomsLoading] = useState(true);
@@ -121,6 +125,18 @@ export default function DashboardPage() {
             <Avatar className="h-8 w-8">
               <AvatarFallback className="text-xs">{getInitials(user.name)}</AvatarFallback>
             </Avatar>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Toggle theme"
+              onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+            >
+              {resolvedTheme === 'dark' ? (
+                <BsSun className="h-4 w-4" />
+              ) : (
+                <BsMoon className="h-4 w-4" />
+              )}
+            </Button>
             <Button variant="ghost" size="sm" onClick={handleLogout}>
               Sign out
             </Button>

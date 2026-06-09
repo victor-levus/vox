@@ -7,6 +7,7 @@ import type { AxiosError } from 'axios';
 import { useAppDispatch } from '@/store';
 import { setUser } from '@/store/slices/authSlice';
 import { authService } from '@/services/auth.service';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,6 +20,7 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function LoginPage() {
+  useDocumentTitle('Sign In');
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();

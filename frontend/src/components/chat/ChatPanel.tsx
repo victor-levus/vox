@@ -33,11 +33,13 @@ export function ChatPanel({ onSend, onTyping }: ChatPanelProps) {
         : null;
 
   return (
-    <div className="flex h-full w-72 shrink-0 flex-col border-l border-zinc-800 bg-zinc-900">
+    <div className="absolute inset-0 z-30 flex flex-col bg-zinc-900 sm:relative sm:inset-auto sm:h-full sm:w-72 sm:shrink-0 sm:border-l sm:border-zinc-800">
       <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
         <h2 className="text-sm font-semibold text-white">Chat</h2>
         <button
           onClick={() => dispatch(toggleChat())}
+          title="Close chat"
+          aria-label="Close chat"
           className="rounded-full p-1 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
         >
           <BsXLg className="h-4 w-4" />

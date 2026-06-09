@@ -37,6 +37,7 @@ import { SocketEvents } from '@/types';
 import type { Participant } from '@/types';
 import type { Reaction } from '@/components/meeting/ReactionOverlay';
 import { useMedia } from '@/hooks/useMedia';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useSocket } from '@/hooks/useSocket';
 import { useWebRTC } from '@/hooks/useWebRTC';
 import { useChat } from '@/hooks/useChat';
@@ -86,13 +87,18 @@ export default function MeetingRoomPage() {
   const isHandRaised = useAppSelector((s) => s.meeting.isHandRaised);
 
   const roomRef = useRef<{ id: string; hostId: string } | null>(null);
+  const participantsRef = useRef(participants);
+  useEffect(() => { participantsRef.current = participants; }, [participants]);
   const [roomId, setRoomId] = useState<string | null>(null);
   const [reactionsByUserId, setReactionsByUserId] = useState<Map<string, Reaction[]>>(() => new Map());
   const [showRecordConfirm, setShowRecordConfirm] = useState(false);
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
 
   const isRecording = useAppSelector((s) => s.meeting.isRecording);
   const hostId = useAppSelector((s) => s.meeting.hostId);
+  const roomName = useAppSelector((s) => s.meeting.roomName);
   const isHost = hostId === user.id;
+  useDocumentTitle(roomName ?? '');
 
   const {
     localStream,
@@ -161,10 +167,18 @@ export default function MeetingRoomPage() {
       const room = roomRef.current;
       if (!room) return;
       dispatch(addParticipant(toParticipant(sp, room.id, room.hostId)));
+      toast.info(`${sp.name} joined`);
     };
 
     const onUserLeft = ({ userId }: { userId: string; socketId: string }) => {
+      const leaving = participantsRef.current.find((p) => p.userId === userId);
+      if (leaving) toast.info(`${leaving.user.name} left`);
       dispatch(removeParticipant(userId));
+    };
+
+    const onMeetingEnded = () => {
+      toast.info('The host ended the meeting');
+      navigate('/dashboard', { replace: true });
     };
 
     const onHandRaised = ({ userId }: { userId: string }) => {
@@ -249,6 +263,7 @@ export default function MeetingRoomPage() {
     socket.on(SocketEvents.REACTION, onReaction);
     socket.on(SocketEvents.RECORDING_STARTED, onRecordingStarted);
     socket.on(SocketEvents.RECORDING_STOPPED, onRecordingStopped);
+    socket.on(SocketEvents.MEETING_ENDED, onMeetingEnded);
 
     return () => {
       socket.off(SocketEvents.PARTICIPANT_LIST, onParticipantList);
@@ -266,6 +281,7 @@ export default function MeetingRoomPage() {
       socket.off(SocketEvents.REACTION, onReaction);
       socket.off(SocketEvents.RECORDING_STARTED, onRecordingStarted);
       socket.off(SocketEvents.RECORDING_STOPPED, onRecordingStopped);
+      socket.off(SocketEvents.MEETING_ENDED, onMeetingEnded);
     };
   }, [socket, dispatch, navigate, muteAudio, unmuteAudio, disableVideo, enableVideo]);
 
@@ -332,6 +348,10 @@ export default function MeetingRoomPage() {
   };
 
   const handleLeave = () => {
+    if (isHost) {
+      setShowLeaveDialog(true);
+      return;
+    }
     if (isRecording) {
       stopRecording();
       socket?.emit(SocketEvents.RECORDING_STOPPED);
@@ -339,9 +359,28 @@ export default function MeetingRoomPage() {
     navigate('/dashboard', { replace: true });
   };
 
+  const handleLeaveConfirm = () => {
+    setShowLeaveDialog(false);
+    if (isRecording) {
+      stopRecording();
+      socket?.emit(SocketEvents.RECORDING_STOPPED);
+    }
+    navigate('/dashboard', { replace: true });
+  };
+
+  const handleEndMeeting = () => {
+    setShowLeaveDialog(false);
+    if (isRecording) {
+      stopRecording();
+      socket?.emit(SocketEvents.RECORDING_STOPPED);
+    }
+    socket?.emit(SocketEvents.END_MEETING);
+    navigate('/dashboard', { replace: true });
+  };
+
   return (
     <div className="flex h-screen flex-col bg-zinc-950">
-      <div className="flex min-h-0 flex-1">
+      <div className="relative flex min-h-0 flex-1">
         <div className="min-w-0 flex-1">
           <VideoGrid
             localStream={localStream}
@@ -367,6 +406,25 @@ export default function MeetingRoomPage() {
         onSwitchCamera={switchCamera}
         onSwitchMicrophone={switchMicrophone}
       />
+
+      <Dialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Leave meeting?</DialogTitle>
+            <DialogDescription>
+              As the host, you can leave and let others continue, or end the meeting for everyone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col gap-2 sm:flex-col">
+            <Button variant="outline" className="w-full" onClick={handleLeaveConfirm}>
+              Leave meeting
+            </Button>
+            <Button variant="destructive" className="w-full" onClick={handleEndMeeting}>
+              End meeting for everyone
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showRecordConfirm} onOpenChange={setShowRecordConfirm}>
         <DialogContent className="sm:max-w-md">

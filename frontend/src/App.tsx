@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
+import { ThemeProvider } from 'next-themes';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { setUser, setLoading } from '@/store/slices/authSlice';
 import { authService } from '@/services/auth.service';
@@ -33,6 +34,7 @@ export default function App() {
   }, [dispatch]);
 
   return (
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
@@ -66,5 +68,6 @@ export default function App() {
       </Routes>
       <Toaster richColors position="bottom-right" />
     </BrowserRouter>
+    </ThemeProvider>
   );
 }

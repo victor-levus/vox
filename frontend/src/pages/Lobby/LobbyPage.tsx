@@ -10,6 +10,7 @@ import {
 } from 'react-icons/bs';
 import { useAppSelector } from '@/store';
 import { meetingService } from '@/services/meeting.service';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import type { Room } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +32,7 @@ export default function LobbyPage() {
   const user = useAppSelector((s) => s.auth.user)!;
 
   const [room, setRoom] = useState<Room | null>(null);
+  useDocumentTitle(room ? `Lobby · ${room.name}` : 'Lobby');
   const [pageLoading, setPageLoading] = useState(true);
   const [displayName, setDisplayName] = useState(user.name);
   const [isMuted, setIsMuted] = useState(false);

@@ -29,12 +29,18 @@ interface VideoGridProps {
   reactionsByUserId: Map<string, Reaction[]>;
 }
 
-function gridColsClass(count: number): string {
+// Return Tailwind grid-template-columns + grid-template-rows classes so that
+// every tile exactly fills the container (auto-rows-fr + explicit cols → no scroll).
+// Column counts chosen so row-count keeps tile aspect reasonable on each breakpoint.
+function getGridClasses(count: number): string {
+  // mobile always 1 column; rows = count (auto-rows-fr fills height evenly)
   if (count <= 1) return 'grid-cols-1';
-  if (count <= 2) return 'grid-cols-2';
-  if (count <= 4) return 'grid-cols-2';
-  if (count <= 9) return 'grid-cols-3';
-  return 'grid-cols-4';
+  if (count === 2) return 'grid-cols-1 sm:grid-cols-2';
+  if (count <= 4) return 'grid-cols-2 sm:grid-cols-2';
+  if (count <= 6) return 'grid-cols-2 sm:grid-cols-3';
+  if (count <= 9) return 'grid-cols-2 sm:grid-cols-3';
+  if (count <= 12) return 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4';
+  return 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5';
 }
 
 export function VideoGrid({
@@ -112,7 +118,7 @@ export function VideoGrid({
   if (pinnedTile) {
     const otherTiles = tiles.filter((t) => t.key !== effectivePinnedId);
     return (
-      <div className="flex h-full flex-col gap-2 p-2">
+      <div className="flex h-full flex-col gap-1.5 p-1.5 sm:gap-2 sm:p-2">
         <div className="min-h-0 flex-1">
           <VideoTile
             {...pinnedTile}
@@ -122,9 +128,9 @@ export function VideoGrid({
           />
         </div>
         {otherTiles.length > 0 && (
-          <div className="flex h-28 shrink-0 gap-2 overflow-x-auto">
+          <div className="flex h-20 shrink-0 gap-1.5 overflow-x-auto sm:h-28 sm:gap-2">
             {otherTiles.map((tile) => (
-              <div key={tile.key} className="h-full w-44 shrink-0">
+              <div key={tile.key} className="h-full w-32 shrink-0 sm:w-44">
                 <VideoTile
                   {...tile}
                   audioOutputId={tile.isLocal ? undefined : audioOutputId}
@@ -138,20 +144,20 @@ export function VideoGrid({
     );
   }
 
-  // Grid layout: equal tiles
+  // All tiles (including solo) fill the container exactly — no scrolling.
+  // auto-rows-fr divides available height equally across however many rows CSS Grid creates.
   return (
     <div
-      className={`grid h-full auto-rows-fr gap-2 p-2 ${gridColsClass(count)} ${
-        count > 9 ? 'overflow-y-auto' : ''
-      }`}
+      className={`grid h-full auto-rows-fr gap-1.5 p-1.5 sm:gap-2 sm:p-2 ${getGridClasses(count)}`}
     >
       {tiles.map((tile) => (
-        <VideoTile
-          key={tile.key}
-          {...tile}
-          audioOutputId={tile.isLocal ? undefined : audioOutputId}
-          onTogglePin={() => setManualPinnedId(tile.key)}
-        />
+        <div key={tile.key} className="h-full w-full min-h-0">
+          <VideoTile
+            {...tile}
+            audioOutputId={tile.isLocal ? undefined : audioOutputId}
+            onTogglePin={() => setManualPinnedId(tile.key)}
+          />
+        </div>
       ))}
     </div>
   );
