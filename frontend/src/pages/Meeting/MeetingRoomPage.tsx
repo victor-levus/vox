@@ -11,7 +11,18 @@ import {
   setMuted,
   setCameraOff,
   setHost,
+  setRecording,
 } from '@/store/slices/meetingSlice';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { useRecording } from '@/hooks/useRecording';
 import {
   setParticipants,
   addParticipant,
@@ -77,6 +88,11 @@ export default function MeetingRoomPage() {
   const roomRef = useRef<{ id: string; hostId: string } | null>(null);
   const [roomId, setRoomId] = useState<string | null>(null);
   const [reactionsByUserId, setReactionsByUserId] = useState<Map<string, Reaction[]>>(() => new Map());
+  const [showRecordConfirm, setShowRecordConfirm] = useState(false);
+
+  const isRecording = useAppSelector((s) => s.meeting.isRecording);
+  const hostId = useAppSelector((s) => s.meeting.hostId);
+  const isHost = hostId === user.id;
 
   const {
     localStream,
@@ -102,6 +118,7 @@ export default function MeetingRoomPage() {
   const socket = useSocket(code!);
   const { remoteStreams } = useWebRTC(socket, localStream);
   const { sendMessage, setTyping } = useChat(socket, roomId);
+  const { startRecording, stopRecording } = useRecording(localStream, remoteStreams);
 
   useEffect(() => {
     if (!code) return;
@@ -214,6 +231,9 @@ export default function MeetingRoomPage() {
       }, 3000);
     };
 
+    const onRecordingStarted = () => dispatch(setRecording(true));
+    const onRecordingStopped = () => dispatch(setRecording(false));
+
     socket.on(SocketEvents.PARTICIPANT_LIST, onParticipantList);
     socket.on(SocketEvents.USER_JOINED, onUserJoined);
     socket.on(SocketEvents.USER_LEFT, onUserLeft);
@@ -227,6 +247,8 @@ export default function MeetingRoomPage() {
     socket.on(SocketEvents.HOST_CHANGED, onHostChanged);
     socket.on(SocketEvents.PARTICIPANT_STATE_UPDATED, onParticipantStateUpdated);
     socket.on(SocketEvents.REACTION, onReaction);
+    socket.on(SocketEvents.RECORDING_STARTED, onRecordingStarted);
+    socket.on(SocketEvents.RECORDING_STOPPED, onRecordingStopped);
 
     return () => {
       socket.off(SocketEvents.PARTICIPANT_LIST, onParticipantList);
@@ -242,6 +264,8 @@ export default function MeetingRoomPage() {
       socket.off(SocketEvents.HOST_CHANGED, onHostChanged);
       socket.off(SocketEvents.PARTICIPANT_STATE_UPDATED, onParticipantStateUpdated);
       socket.off(SocketEvents.REACTION, onReaction);
+      socket.off(SocketEvents.RECORDING_STARTED, onRecordingStarted);
+      socket.off(SocketEvents.RECORDING_STOPPED, onRecordingStopped);
     };
   }, [socket, dispatch, navigate, muteAudio, unmuteAudio, disableVideo, enableVideo]);
 
@@ -292,7 +316,26 @@ export default function MeetingRoomPage() {
     socket?.emit(SocketEvents.REACTION, { emoji });
   }, [socket]);
 
+  const handleToggleRecording = () => {
+    if (isRecording) {
+      stopRecording();
+      socket?.emit(SocketEvents.RECORDING_STOPPED);
+    } else {
+      setShowRecordConfirm(true);
+    }
+  };
+
+  const handleConfirmRecording = () => {
+    setShowRecordConfirm(false);
+    startRecording();
+    socket?.emit(SocketEvents.RECORDING_STARTED);
+  };
+
   const handleLeave = () => {
+    if (isRecording) {
+      stopRecording();
+      socket?.emit(SocketEvents.RECORDING_STOPPED);
+    }
     navigate('/dashboard', { replace: true });
   };
 
@@ -325,15 +368,35 @@ export default function MeetingRoomPage() {
         onSwitchMicrophone={switchMicrophone}
       />
 
+      <Dialog open={showRecordConfirm} onOpenChange={setShowRecordConfirm}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Start Recording</DialogTitle>
+            <DialogDescription>
+              Recording will be visible to all participants. The file will download to your device when you stop.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowRecordConfirm(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmRecording}>Start Recording</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Controls
         isAudioEnabled={isAudioEnabled}
         isVideoEnabled={isVideoEnabled}
         isScreenSharing={isScreenSharing}
         isHandRaised={isHandRaised}
+        isRecording={isRecording}
+        isHost={isHost}
         onToggleAudio={handleToggleAudio}
         onToggleVideo={handleToggleVideo}
         onToggleScreenShare={handleToggleScreenShare}
         onToggleRaiseHand={handleToggleRaiseHand}
+        onToggleRecording={handleToggleRecording}
         onReact={handleReact}
         onLeave={handleLeave}
       />

@@ -380,14 +380,14 @@
 
 ---
 
-### Step 26 — Recording
-- [ ] Recording available to host only
-- [ ] `useRecording` hook:
+### Step 26 — Recording ✅
+- [x] Recording available to host only
+- [x] `useRecording` hook:
   - Capture canvas composite of VideoGrid using `captureStream()` + `MediaRecorder`
   - `startRecording()` — emit `recording-started` socket event (shows red dot to all)
   - `stopRecording()` — emit `recording-stopped`, trigger `.webm` file download
-- [ ] Visual "REC" indicator in Toolbar for all participants during recording
-- [ ] Confirm dialog before starting ("Recording will be visible to all participants")
+- [x] Visual "REC" indicator in Toolbar for all participants during recording
+- [x] Confirm dialog before starting ("Recording will be visible to all participants")
 
 ---
 

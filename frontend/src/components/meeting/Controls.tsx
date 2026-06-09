@@ -14,6 +14,8 @@ import {
   BsHandIndex,
   BsHandIndexFill,
   BsGear,
+  BsRecord2,
+  BsRecord2Fill,
 } from 'react-icons/bs';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { toggleChat } from '@/store/slices/chatSlice';
@@ -27,10 +29,13 @@ interface ControlsProps {
   isVideoEnabled: boolean;
   isScreenSharing: boolean;
   isHandRaised: boolean;
+  isRecording: boolean;
+  isHost: boolean;
   onToggleAudio: () => void;
   onToggleVideo: () => void;
   onToggleScreenShare: () => Promise<void>;
   onToggleRaiseHand: () => void;
+  onToggleRecording: () => void;
   onReact: (emoji: string) => void;
   onLeave: () => void;
 }
@@ -73,10 +78,13 @@ export function Controls({
   isVideoEnabled,
   isScreenSharing,
   isHandRaised,
+  isRecording,
+  isHost,
   onToggleAudio,
   onToggleVideo,
   onToggleScreenShare,
   onToggleRaiseHand,
+  onToggleRecording,
   onReact,
   onLeave,
 }: ControlsProps) {
@@ -87,8 +95,15 @@ export function Controls({
 
   return (
     <div className="flex shrink-0 items-center bg-zinc-900 px-4 py-3">
-      {/* Left — spacer */}
-      <div className="flex flex-1" />
+      {/* Left — REC indicator */}
+      <div className="flex flex-1 items-center">
+        {isRecording && (
+          <div className="flex items-center gap-1.5 rounded-full bg-zinc-800 px-3 py-1.5">
+            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />
+            <span className="text-xs font-bold tracking-wider text-red-400">REC</span>
+          </div>
+        )}
+      </div>
 
       {/* Center — primary controls */}
       <div className="flex items-center gap-3">
@@ -152,8 +167,21 @@ export function Controls({
         </button>
       </div>
 
-      {/* Right — panel toggles */}
+      {/* Right — record (host only) + panel toggles */}
       <div className="flex flex-1 items-center justify-end gap-2">
+        {isHost && (
+          <ControlButton
+            onClick={onToggleRecording}
+            title={isRecording ? 'Stop recording' : 'Start recording'}
+            variant={isRecording ? 'danger' : 'ghost'}
+          >
+            {isRecording ? (
+              <BsRecord2Fill className="h-5 w-5" />
+            ) : (
+              <BsRecord2 className="h-5 w-5" />
+            )}
+          </ControlButton>
+        )}
         <div className="relative">
           <ControlButton
             onClick={() => dispatch(toggleChat())}

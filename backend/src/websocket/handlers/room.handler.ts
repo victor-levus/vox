@@ -234,4 +234,20 @@ export function registerRoomHandlers(io: Server, socket: Socket): void {
 
     io.to(roomCode).emit(SocketEvents.HOST_CHANGED, { newHostUserId: targetUserId });
   });
+
+  // --- Recording (host only) ---
+
+  socket.on(SocketEvents.RECORDING_STARTED, () => {
+    const roomCode = socketToRoom.get(socket.id);
+    if (!roomCode) return;
+    if (roomHostUserIds.get(roomCode) !== userId) return;
+    io.to(roomCode).emit(SocketEvents.RECORDING_STARTED);
+  });
+
+  socket.on(SocketEvents.RECORDING_STOPPED, () => {
+    const roomCode = socketToRoom.get(socket.id);
+    if (!roomCode) return;
+    if (roomHostUserIds.get(roomCode) !== userId) return;
+    io.to(roomCode).emit(SocketEvents.RECORDING_STOPPED);
+  });
 }
