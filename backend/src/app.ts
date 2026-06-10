@@ -15,6 +15,12 @@ import messagesRouter from './modules/messages/messages.routes';
 
 const app = express();
 
+// Trust the first reverse proxy (VPS nginx) so that:
+// - SESSION_COOKIE_SECURE=true works (Express sees X-Forwarded-Proto: https)
+// - express-rate-limit uses real client IP from X-Forwarded-For
+// - req.ip shows the actual client address, not the proxy IP
+app.set('trust proxy', 1);
+
 app.use(helmet());
 const allowedOrigins = config.CLIENT_URL.split(',').map((o) => o.trim());
 app.use(

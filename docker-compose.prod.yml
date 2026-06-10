@@ -30,7 +30,7 @@ services:
       - .env
     environment:
       NODE_ENV: production
-      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}
+      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}?allowPublicKeyRetrieval=true
       SESSION_COOKIE_SECURE: "true"
     # Port intentionally not exposed — nginx proxies /api and /socket.io to this container
     depends_on:
