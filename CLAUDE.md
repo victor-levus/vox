@@ -289,3 +289,49 @@ Prisma 7 supports `_count` with a `where` filter — use it when you need a cond
 _count: { select: { participants: { where: { leftAt: null } } } }
 ```
 Without the filter, `_count` counts all rows ever inserted, including soft-deleted/left ones.
+
+### Production deployment — multi-proxy session cookie (critical)
+`express-session` calls an internal `issecure(req, trustProxy)` before setting a `Secure` cookie. It reads `req.headers['x-forwarded-proto']` directly — **it does NOT use Express's `trust proxy` setting**. If that header is missing or `http`, the cookie is silently never set, even though the session row exists in the DB.
+
+In a multi-proxy chain (VPS nginx → Docker frontend nginx → backend), the Docker frontend nginx must **hardcode** the header — do NOT use `$scheme` (always `http` between containers) or `$http_x_forwarded_proto` (fragile, spacing-dependent in sed):
+
+```nginx
+# frontend/nginx.conf — /api/ and /socket.io/ locations
+proxy_set_header X-Forwarded-Proto https;
+```
+
+`app.set('trust proxy', 1)` is still needed for `req.ip` / rate-limiting, but it does **not** fix the `issecure` check.
+
+### Production deployment — MySQL 8 + Prisma auth plugin
+MySQL 8 uses `caching_sha2_password` by default. Prisma's MariaDB adapter fails with an RSA public key error unless you add `?allowPublicKeyRetrieval=true` to the connection string:
+```
+DATABASE_URL=mysql://user:pass@db:3306/videocall?allowPublicKeyRetrieval=true
+```
+Add this to both `.env` and `docker-compose.prod.yml` environment block.
+
+### Production deployment — nginx 1.24 HTTP/2 syntax
+Ubuntu 22.04 ships nginx **1.24.0** which does **not** support the `http2 on;` directive (added in 1.25.1). Use the old inline syntax:
+```nginx
+listen 443 ssl http2;
+listen [::]:443 ssl http2;
+```
+
+### Production deployment — Prisma Docker build
+`prisma generate` runs at Docker build time and needs `DATABASE_URL` to exist (even a fake one):
+```dockerfile
+RUN DATABASE_URL="mysql://x:x@localhost/x" npx prisma generate
+```
+The production stage also needs prisma artefacts copied from the builder:
+```dockerfile
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
+```
+
+### Production deployment — TypeScript 7 `baseUrl` deprecation
+`frontend/tsconfig.app.json` with `"baseUrl": "."` triggers a TypeScript 7 deprecation error during Docker build. Suppress it:
+```json
+"baseUrl": ".",
+"ignoreDeprecations": "6.0"
+```

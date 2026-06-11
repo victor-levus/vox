@@ -7,11 +7,16 @@
 Internet
   │
   ▼
-VPS (public IP + domain)
-  ├── Nginx :80/:443  ──WireGuard 10.0.0.1→10.0.0.2──►  Local Ubuntu :80
-  │                                                         └── Docker (frontend + backend + db)
-  └── coturn :3478/:5349  (native install on VPS, direct UDP)
+VPS (public IP 162.245.191.102, domain vps.sleecetechnologies.com.ng)
+  ├── Nginx :80/:443  ──WireGuard 10.10.0.1→10.10.0.10──►  Local Ubuntu :80
+  │                                                            └── Docker (frontend + backend + db)
+  └── coturn :3478 (native install on VPS, direct UDP to clients)
 ```
+
+> **WireGuard subnet used:** `10.10.0.0/24`  
+> VPS hub = `10.10.0.1`, local machine = `10.10.0.10`
+
+---
 
 ## Prerequisites
 
@@ -19,79 +24,86 @@ VPS (public IP + domain)
 |--------------|-------------------------------------------------|
 | VPS          | Ubuntu 22.04+, public IP, SSH access            |
 | Local Ubuntu | Ubuntu 22.04+, Docker installed                 |
-| Domain       | A record → VPS public IP (both `@` and `www`)   |
+| Domain       | A record → VPS public IP                        |
 
 ---
 
 ## Step 1 — DNS
 
-In your domain registrar, add:
-
-```
-@    A   <VPS_PUBLIC_IP>
-www  A   <VPS_PUBLIC_IP>
-```
-
+In your domain registrar, add an A record pointing to the VPS public IP.
 Check propagation before running certbot:
 ```bash
-dig +short yourdomain.com
+dig +short vps.sleecetechnologies.com.ng
 ```
 
 ---
 
-## Step 2 — VPS: WireGuard setup
+## Step 2 — VPS: WireGuard (if not already configured)
 
-SSH into your VPS:
+> **Note:** If WireGuard is already running on the VPS with existing peers, just ADD a new `[Peer]` block for the local machine — do **not** recreate the server config.
 
 ```bash
-sudo apt update && sudo apt install -y wireguard
+# On VPS — show current config
+sudo wg show
+sudo cat /etc/wireguard/wg0.conf
 
-# Generate VPS WireGuard keys
-wg genkey | sudo tee /etc/wireguard/server_private.key \
-          | wg pubkey | sudo tee /etc/wireguard/server_public.key
-sudo chmod 600 /etc/wireguard/server_private.key
+# Add peer for local machine (replace with actual public key)
+sudo wg set wg0 peer <LOCAL_MACHINE_PUBLIC_KEY> \
+  allowed-ips 10.10.0.10/32 \
+  persistent-keepalive 25
 
-# Print both — you'll need these values
-sudo cat /etc/wireguard/server_private.key   # → VPS_PRIVATE_KEY
-sudo cat /etc/wireguard/server_public.key    # → VPS_PUBLIC_KEY (give to local machine)
-
-# Enable IP forwarding
-echo "net.ipv4.ip_forward=1" | sudo tee -a /etc/sysctl.conf
-sudo sysctl -p
-
-# Find your network interface name (note it — probably eth0, ens3, ens160)
-ip route | grep default
+# Save to config file
+sudo wg-quick save wg0
 ```
 
-Copy `vps/wireguard/wg0-server.conf` to `/etc/wireguard/wg0.conf` on the VPS.
-Fill in the placeholders (come back to fill `<LOCAL_MACHINE_PUBLIC_KEY>` after Step 4):
+On local Ubuntu:
+```bash
+sudo apt install -y wireguard
 
+# Generate local keys
+wg genkey | sudo tee /etc/wireguard/local_private.key \
+          | wg pubkey | sudo tee /etc/wireguard/local_public.key
+sudo chmod 600 /etc/wireguard/local_private.key
+
+sudo cat /etc/wireguard/local_public.key   # → give this to VPS
 ```
-<VPS_PRIVATE_KEY>           → contents of /etc/wireguard/server_private.key
-<LOCAL_MACHINE_PUBLIC_KEY>  → generated in Step 4 (fill in after)
-eth0 in PostUp/PostDown     → your actual interface name from above
+
+Copy `vps/wireguard/wg0-client.conf` to `/etc/wireguard/wg0.conf` on local machine.
+Fill in `<LOCAL_MACHINE_PRIVATE_KEY>` from the file above.
+
+```bash
+sudo wg-quick up wg0
+sudo systemctl enable wg-quick@wg0
+
+# Test
+ping 10.10.0.1   # from local → VPS should reply
 ```
 
 ---
 
 ## Step 3 — VPS: Nginx + SSL
 
+> **nginx version note:** Ubuntu 22.04 ships nginx 1.24.0 which does NOT support `http2 on;`  
+> Always use `listen 443 ssl http2;` syntax.
+
 ```bash
 sudo apt install -y nginx certbot python3-certbot-nginx
 
-# Certbot webroot directory
-sudo mkdir -p /var/www/certbot
+# If other configs exist, check for conflicts first
+ls /etc/nginx/sites-enabled/
 
-# Deploy config (replace yourdomain.com with your actual domain)
+# Rewrite main nginx.conf to a clean slate if it has hardcoded server blocks:
+sudo cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak
+
+# Deploy vox config
 sudo cp /path/to/repo/vps/nginx.conf /etc/nginx/sites-available/vox
-sudo sed -i 's/<YOUR_DOMAIN>/yourdomain.com/g' /etc/nginx/sites-available/vox
 sudo ln -s /etc/nginx/sites-available/vox /etc/nginx/sites-enabled/vox
 sudo rm -f /etc/nginx/sites-enabled/default
 
 sudo nginx -t && sudo systemctl reload nginx
 
-# Issue SSL cert — DNS must already point to this VPS
-sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
+# Issue SSL cert (use --nginx authenticator, NOT --webroot)
+sudo certbot --nginx -d vps.sleecetechnologies.com.ng
 
 # Auto-renew
 sudo systemctl enable --now certbot.timer
@@ -104,7 +116,7 @@ sudo systemctl enable --now certbot.timer
 ```bash
 sudo apt install -y coturn
 
-# Enable daemon start
+# Enable daemon
 sudo sed -i 's/#TURNSERVER_ENABLED=1/TURNSERVER_ENABLED=1/' /etc/default/coturn
 
 # Create log dir
@@ -112,22 +124,9 @@ sudo mkdir -p /var/log/turnserver
 
 # Deploy config
 sudo cp /path/to/repo/vps/coturn/turnserver.conf /etc/turnserver.conf
-```
 
-Edit `/etc/turnserver.conf` — replace all placeholders:
-```
-<VPS_PUBLIC_IP>   → your VPS IP address
-<YOUR_DOMAIN>     → your domain
-<TURN_PASSWORD>   → a strong random password (keep this — goes into .env too)
-```
-
-Optionally uncomment the TLS cert lines after certbot ran.
-
-```bash
 sudo systemctl enable --now coturn
-
-# Verify it's listening
-sudo ss -ulnp | grep 3478
+sudo ss -ulnp | grep 3478   # verify listening
 ```
 
 ---
@@ -148,72 +147,16 @@ sudo ufw enable
 
 ---
 
-## Step 6 — Local Ubuntu: WireGuard setup
-
-SSH into your local Ubuntu server:
+## Step 6 — Local Ubuntu: Deploy the app
 
 ```bash
-sudo apt update && sudo apt install -y wireguard
-
-# Generate local machine keys
-wg genkey | sudo tee /etc/wireguard/local_private.key \
-          | wg pubkey | sudo tee /etc/wireguard/local_public.key
-sudo chmod 600 /etc/wireguard/local_private.key
-
-# Print public key — copy this to the VPS wg0.conf [Peer] section
-sudo cat /etc/wireguard/local_public.key
-```
-
-Copy `vps/wireguard/wg0-client.conf` to `/etc/wireguard/wg0.conf` on the local machine.
-Fill in:
-```
-<LOCAL_MACHINE_PRIVATE_KEY>  → contents of /etc/wireguard/local_private.key
-<VPS_PUBLIC_KEY>             → contents of /etc/wireguard/server_public.key (from VPS)
-<VPS_PUBLIC_IP>              → your VPS IP address
-```
-
----
-
-## Step 7 — Exchange keys & start WireGuard
-
-**On VPS** — fill in the local machine's public key you got in Step 6:
-```bash
-sudo nano /etc/wireguard/wg0.conf
-# Replace <LOCAL_MACHINE_PUBLIC_KEY> with the key from Step 6
-```
-
-**Start WireGuard on both machines:**
-```bash
-# On VPS
-sudo wg-quick up wg0
-sudo systemctl enable wg-quick@wg0
-
-# On local machine
-sudo wg-quick up wg0
-sudo systemctl enable wg-quick@wg0
-```
-
-**Test the tunnel:**
-```bash
-# From VPS — should get replies from local machine
-ping 10.0.0.2
-
-# From local machine — should get replies from VPS
-ping 10.0.0.1
-```
-
----
-
-## Step 8 — Local Ubuntu: Deploy the app
-
-```bash
-# Install Docker if not already installed
+# Install Docker
 sudo apt install -y docker.io docker-compose-plugin
 sudo usermod -aG docker $USER
-# Log out and back in for group to take effect
+# Log out and back in
 
 # Clone the repo
-git clone <your-repo-url> ~/video-call
+git clone https://github.com/victor-levus/vox ~/video-call
 cd ~/video-call
 ```
 
@@ -222,8 +165,11 @@ Edit `.env` with production values:
 # MySQL
 MYSQL_ROOT_PASSWORD=<strong-root-password>
 MYSQL_DATABASE=videocall
-MYSQL_USER=victorlevus
+MYSQL_USER=<db-user>
 MYSQL_PASSWORD=<strong-db-password>
+
+# IMPORTANT: allowPublicKeyRetrieval=true is required for MySQL 8 + Prisma auth plugin
+DATABASE_URL=mysql://<db-user>:<db-password>@db:3306/videocall?allowPublicKeyRetrieval=true
 
 # Session
 SESSION_SECRET=<32+ random chars>
@@ -234,19 +180,18 @@ SESSION_MAX_AGE_MS=604800000
 # Server
 PORT=4000
 NODE_ENV=production
-CLIENT_URL="https://yourdomain.com,https://www.yourdomain.com"
+CLIENT_URL="https://vps.sleecetechnologies.com.ng"
 
 # TURN server (on VPS)
 VITE_STUN_URL="stun:stun.l.google.com:19302"
-VITE_TURN_URL="turn:yourdomain.com:3478"
+VITE_TURN_URL="turn:vps.sleecetechnologies.com.ng:3478"
 VITE_TURN_USERNAME=vox
-VITE_TURN_CREDENTIAL=<TURN_PASSWORD>     # same password set in turnserver.conf
+VITE_TURN_CREDENTIAL=<TURN_PASSWORD>
 ```
 
 **Start the app (skip the local coturn container — coturn is on VPS):**
 ```bash
-docker compose -f docker-compose.prod.yml up -d --build \
-  --scale coturn=0
+docker compose -f docker-compose.prod.yml up -d --build --scale coturn=0
 ```
 
 Run Prisma migrations:
@@ -254,21 +199,44 @@ Run Prisma migrations:
 docker exec videocall_backend npx prisma migrate deploy
 ```
 
+> **Note:** If `migrate deploy` says "schema not found", the prisma folder is inside the container at `/app/prisma` — the command above should work since the Dockerfile copies it there. If it still fails, cp manually:
+> ```bash
+> docker cp ~/video-call/backend/prisma videocall_backend:/app/
+> docker cp ~/video-call/backend/prisma.config.ts videocall_backend:/app/
+> docker exec videocall_backend npx prisma migrate deploy
+> ```
+
 ---
 
-## Step 9 — Verify
+## Step 7 — Verify
 
-| Check                                     | Expected                              |
-|-------------------------------------------|---------------------------------------|
-| `https://yourdomain.com`                  | Vōx login page loads                  |
-| `https://yourdomain.com/api/health`       | `{"status":"ok"}`                     |
-| Browser DevTools → Network → WS           | Socket.io connection established      |
-| Create meeting → open DevTools console   | ICE candidate with `typ relay` present |
-| `sudo wg show` on VPS                     | Shows local peer with recent handshake |
+| Check                                           | Expected                         |
+|-------------------------------------------------|----------------------------------|
+| `https://vps.sleecetechnologies.com.ng`         | Vōx login page loads             |
+| `https://vps.sleecetechnologies.com.ng/api/health` | `{"status":"ok"}`             |
+| Browser DevTools → Application → Cookies        | `connect.sid` present after login |
+| Browser DevTools → Network → WS                 | Socket.io connection established |
+| `sudo wg show` on VPS                           | Shows local peer with recent handshake |
+
+---
+
+## Updating the app after code changes
+
+```bash
+# On local Ubuntu
+cd ~/video-call
+git pull
+docker compose -f docker-compose.prod.yml up -d --build --scale coturn=0
+```
 
 ---
 
 ## Troubleshooting
+
+**Session cookie not set after login (browser Application tab shows no cookies):**
+- Root cause: `express-session` won't set a `Secure` cookie unless `X-Forwarded-Proto: https` reaches the backend
+- The Docker frontend nginx MUST hardcode `proxy_set_header X-Forwarded-Proto https;` for both `/api/` and `/socket.io/` locations
+- After changing `frontend/nginx.conf`, rebuild the frontend container: `docker compose -f docker-compose.prod.yml up -d --build frontend`
 
 **WireGuard not connecting:**
 - Check VPS firewall allows UDP 51820: `sudo ufw status`
@@ -276,15 +244,21 @@ docker exec videocall_backend npx prisma migrate deploy
 - `sudo wg show` on both machines shows connection state
 
 **Nginx 502 Bad Gateway:**
-- The local machine's Docker app isn't reachable at 10.0.0.2:80
-- Verify: `curl http://10.0.0.2` from VPS (should return HTML)
+- Docker app isn't reachable at `http://10.10.0.10`
+- Verify: `curl http://10.10.0.10` from VPS (should return HTML)
 - Check Docker is running: `docker ps` on local machine
+
+**MySQL RSA public key error (Prisma can't connect to DB):**
+- Add `?allowPublicKeyRetrieval=true` to `DATABASE_URL` in `.env` and `docker-compose.prod.yml`
+
+**nginx error: `http2 on` unknown directive:**
+- Your nginx is 1.24.0 or older — use `listen 443 ssl http2;` instead of `http2 on;`
+- `sed -i 's/listen 443 ssl;/listen 443 ssl http2;/' /etc/nginx/sites-available/vox`
+
+**certbot 404 with --webroot:**
+- Use `certbot --nginx` (auto-configures nginx challenge) instead of `--webroot`
 
 **No relay ICE candidates (TURN not working):**
 - Check coturn is running: `sudo systemctl status coturn`
 - Check UDP 3478 is open in ufw
-- Test TURN credentials with a tool like https://webrtc.github.io/samples/src/content/peerconnection/trickle-ice/
-
-**SSL cert not issuing:**
-- DNS must propagate first: `dig +short yourdomain.com` must return the VPS IP
-- Port 80 must be open and Nginx must be serving the ACME challenge
+- Test: https://webrtc.github.io/samples/src/content/peerconnection/trickle-ice/
