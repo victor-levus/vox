@@ -1,0 +1,41 @@
+{
+  "name": "mobile",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "dependencies": {
+    "@hookform/resolvers": "^5.4.0",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-navigation/bottom-tabs": "^7.18.0",
+    "@react-navigation/native": "^7.3.1",
+    "@react-navigation/native-stack": "^7.17.3",
+    "@reduxjs/toolkit": "^2.12.0",
+    "axios": "^1.17.0",
+    "axios-cookiejar-support": "^7.0.0",
+    "expo": "~56.0.11",
+    "expo-dev-client": "~56.0.20",
+    "expo-status-bar": "~56.0.4",
+    "react": "19.2.3",
+    "react-hook-form": "^7.78.0",
+    "react-native": "0.85.3",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "4.25.2",
+    "react-native-webrtc": "^124.0.7",
+    "react-redux": "^9.3.0",
+    "socket.io-client": "^4.8.3",
+    "tough-cookie": "^6.0.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "@types/tough-cookie": "^4.0.5",
+    "babel-plugin-module-resolver": "^5.0.3",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "private": true
+}
