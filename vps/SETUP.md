@@ -7,7 +7,7 @@
 Internet
   │
   ▼
-VPS (public IP 162.245.191.102, domain vps.sleecetechnologies.com.ng)
+VPS (public IP 162.245.191.102, domain vox.sleecetechnologies.com.ng)
   ├── Nginx :80/:443  ──WireGuard 10.10.0.1→10.10.0.10──►  Local Ubuntu :80
   │                                                            └── Docker (frontend + backend + db)
   └── coturn :3478 (native install on VPS, direct UDP to clients)
@@ -33,7 +33,7 @@ VPS (public IP 162.245.191.102, domain vps.sleecetechnologies.com.ng)
 In your domain registrar, add an A record pointing to the VPS public IP.
 Check propagation before running certbot:
 ```bash
-dig +short vps.sleecetechnologies.com.ng
+dig +short vox.sleecetechnologies.com.ng
 ```
 
 ---
@@ -103,7 +103,7 @@ sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t && sudo systemctl reload nginx
 
 # Issue SSL cert (use --nginx authenticator, NOT --webroot)
-sudo certbot --nginx -d vps.sleecetechnologies.com.ng
+sudo certbot --nginx -d vox.sleecetechnologies.com.ng
 
 # Auto-renew
 sudo systemctl enable --now certbot.timer
@@ -180,11 +180,11 @@ SESSION_MAX_AGE_MS=604800000
 # Server
 PORT=4000
 NODE_ENV=production
-CLIENT_URL="https://vps.sleecetechnologies.com.ng"
+CLIENT_URL="https://vox.sleecetechnologies.com.ng"
 
 # TURN server (on VPS)
 VITE_STUN_URL="stun:stun.l.google.com:19302"
-VITE_TURN_URL="turn:vps.sleecetechnologies.com.ng:3478"
+VITE_TURN_URL="turn:vox.sleecetechnologies.com.ng:3478"
 VITE_TURN_USERNAME=vox
 VITE_TURN_CREDENTIAL=<TURN_PASSWORD>
 ```
@@ -212,8 +212,8 @@ docker exec videocall_backend npx prisma migrate deploy
 
 | Check                                           | Expected                         |
 |-------------------------------------------------|----------------------------------|
-| `https://vps.sleecetechnologies.com.ng`         | Vōx login page loads             |
-| `https://vps.sleecetechnologies.com.ng/api/health` | `{"status":"ok"}`             |
+| `https://vox.sleecetechnologies.com.ng`         | Vōx login page loads             |
+| `https://vox.sleecetechnologies.com.ng/api/health` | `{"status":"ok"}`             |
 | Browser DevTools → Application → Cookies        | `connect.sid` present after login |
 | Browser DevTools → Network → WS                 | Socket.io connection established |
 | `sudo wg show` on VPS                           | Shows local peer with recent handshake |
