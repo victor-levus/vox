@@ -343,3 +343,25 @@ COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/clie
 "baseUrl": ".",
 "ignoreDeprecations": "6.0"
 ```
+
+### Production deployment — MySQL table name case sensitivity in migrations
+
+MySQL on Linux (ext4) is **case-sensitive** for table names. Prisma generates migration SQL using the lowercase model name (e.g. `` ALTER TABLE `user` ``) even when the init migration created the table as `User` (capital U, matching `model User` in schema.prisma). On macOS/Windows this is invisible; on Linux production it fails with error 1146 (`Table 'db.user' doesn't exist`).
+
+When you hit this in production:
+```bash
+# 1. Clear the failed-migration flag in _prisma_migrations
+docker exec <backend> npx prisma migrate resolve --rolled-back <migration_name>
+
+# 2. Patch the SQL inside the running container (avoids a full rebuild)
+docker exec <backend> sed -i 's/ALTER TABLE `user`/ALTER TABLE `User`/' \
+  /app/prisma/migrations/<migration_name>/migration.sql
+
+# 3. Re-apply
+docker exec <backend> npx prisma migrate deploy
+
+# 4. Rebuild so the fixed SQL is baked into the image permanently
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+Also fix the migration SQL in the Windows repo and push to GitHub so future image builds use the correct casing.
