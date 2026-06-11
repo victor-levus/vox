@@ -13,6 +13,13 @@ export interface LoginPayload {
   password: string;
 }
 
+export interface GuestJoinPayload {
+  name: string;
+  organisation?: string;
+  inviteToken?: string;
+  roomCode?: string;
+}
+
 export const authService = {
   register: (data: RegisterPayload) =>
     api.post<{ user: User }>('/auth/register', data).then((r) => r.data),
@@ -23,4 +30,7 @@ export const authService = {
   logout: () => api.post('/auth/logout').then((r) => r.data),
 
   getMe: () => api.get<{ user: User }>('/auth/me').then((r) => r.data),
+
+  guestJoin: (data: GuestJoinPayload) =>
+    api.post<{ user: User; roomCode: string }>('/auth/guest-join', data).then((r) => r.data),
 };

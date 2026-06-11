@@ -86,7 +86,6 @@ export async function resolveInvitation(token: string) {
   });
 
   if (!invitation) throw new AppError(404, 'Invitation not found');
-  if (invitation.accepted) throw new AppError(410, 'Invitation already accepted');
   if (invitation.expiresAt < new Date()) throw new AppError(410, 'Invitation has expired');
 
   return invitation;

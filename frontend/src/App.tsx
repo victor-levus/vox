@@ -10,6 +10,7 @@ import DashboardPage from '@/pages/Dashboard/DashboardPage';
 import LobbyPage from '@/pages/Lobby/LobbyPage';
 import MeetingRoomPage from '@/pages/Meeting/MeetingRoomPage';
 import InviteLandingPage from '@/pages/Invite/InviteLandingPage';
+import JoinPage from '@/pages/Invite/JoinPage';
 import { Toaster } from '@/components/ui/sonner';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -40,6 +41,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/invite/:token" element={<InviteLandingPage />} />
+        <Route path="/join/:code" element={<JoinPage />} />
         <Route
           path="/dashboard"
           element={

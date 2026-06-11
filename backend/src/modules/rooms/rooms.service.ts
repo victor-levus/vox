@@ -46,6 +46,16 @@ export async function getRoomByCode(code: string) {
   return room;
 }
 
+export async function getRoomPreview(code: string) {
+  const room = await prisma.room.findUnique({
+    where: { code },
+    select: { name: true, isActive: true, host: { select: { name: true } } },
+  });
+  if (!room) throw new AppError(404, 'Room not found');
+  if (!room.isActive) throw new AppError(410, 'This meeting has ended');
+  return room;
+}
+
 export async function getMyRooms(userId: string) {
   return prisma.room.findMany({
     where: {

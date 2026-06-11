@@ -3,7 +3,7 @@ import rateLimit from 'express-rate-limit';
 import { requireAuth } from '../../middleware/auth.middleware';
 import { validate } from '../../middleware/validate.middleware';
 import { asyncHandler } from '../../utils/asyncHandler';
-import { LoginSchema, RegisterSchema } from './auth.schema';
+import { GuestJoinSchema, LoginSchema, RegisterSchema } from './auth.schema';
 import * as authService from './auth.service';
 
 const loginLimiter = rateLimit({
@@ -41,6 +41,18 @@ router.post(
   asyncHandler(async (req, res) => {
     const user = await authService.login(req.body as Parameters<typeof authService.login>[0], req.session);
     res.json({ user });
+  }),
+);
+
+router.post(
+  '/guest-join',
+  validate(GuestJoinSchema),
+  asyncHandler(async (req, res) => {
+    const result = await authService.guestJoin(
+      req.body as Parameters<typeof authService.guestJoin>[0],
+      req.session,
+    );
+    res.json(result);
   }),
 );
 

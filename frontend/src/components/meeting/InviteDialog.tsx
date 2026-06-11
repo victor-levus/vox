@@ -74,7 +74,7 @@ export function InviteDialog({ open, onClose, roomId, roomCode, isHost }: Invite
   };
 
   const handleCopyLink = () => {
-    const link = `${window.location.origin}/lobby/${roomCode}`;
+    const link = `${window.location.origin}/join/${roomCode}`;
     navigator.clipboard.writeText(link).then(() => toast.success('Link copied to clipboard'));
   };
 
@@ -129,7 +129,7 @@ export function InviteDialog({ open, onClose, roomId, roomCode, isHost }: Invite
             <div className="flex items-center gap-2">
               <Input
                 readOnly
-                value={`${window.location.origin}/lobby/${roomCode}`}
+                value={`${window.location.origin}/join/${roomCode}`}
                 className="font-mono text-xs"
                 onFocus={(e) => e.target.select()}
               />

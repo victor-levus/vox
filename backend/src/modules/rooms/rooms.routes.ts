@@ -30,6 +30,15 @@ router.get(
 );
 
 router.get(
+  '/:code/preview',
+  asyncHandler(async (req, res) => {
+    const { code } = req.params as { code: string };
+    const room = await roomsService.getRoomPreview(code);
+    res.json({ room });
+  }),
+);
+
+router.get(
   '/:code',
   requireAuth,
   asyncHandler(async (req, res) => {

@@ -3,6 +3,8 @@ export interface User {
   name: string;
   email: string;
   avatar?: string;
+  isGuest?: boolean;
+  organisation?: string | null;
   createdAt: string;
 }
 

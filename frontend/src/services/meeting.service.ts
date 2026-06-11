@@ -26,6 +26,13 @@ export const meetingService = {
       .post<{ invitations: Invitation[] }>('/invitations', { roomId, emails, sendEmail })
       .then((r) => r.data),
 
+  getRoomPreview: (code: string) =>
+    api
+      .get<{ room: { name: string; isActive: boolean; host: { name: string } } }>(
+        `/rooms/${code}/preview`,
+      )
+      .then((r) => r.data),
+
   resolveInvitation: (token: string) =>
     api.get<{ invitation: Invitation }>(`/invitations/${token}`).then((r) => r.data),
 
