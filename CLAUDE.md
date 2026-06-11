@@ -316,6 +316,14 @@ listen 443 ssl http2;
 listen [::]:443 ssl http2;
 ```
 
+### Prisma schema changes in development — regenerate the client
+
+`prisma migrate dev` applies the SQL but **does not hot-reload the generated client** when `tsx` is running. After any schema change:
+```bash
+npx prisma generate   # then restart the backend
+```
+Without this, new fields throw `PrismaClientValidationError: Unknown argument 'fieldName'` at runtime even though `tsc` compiled cleanly (tsx strips types without re-checking the generated client).
+
 ### Production deployment — Prisma Docker build
 `prisma generate` runs at Docker build time and needs `DATABASE_URL` to exist (even a fake one):
 ```dockerfile
