@@ -8,6 +8,9 @@ const adapter = new PrismaMariaDb({
   password: url.password,
   database: url.pathname.slice(1),
   port: Number(url.port) || 3306,
+  // MySQL 8 uses caching_sha2_password by default; the driver needs to fetch
+  // the RSA public key on first auth if the client doesn't have it cached.
+  allowPublicKeyRetrieval: true,
 });
 
 const prisma = new PrismaClient({ adapter });
