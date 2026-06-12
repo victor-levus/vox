@@ -303,11 +303,22 @@ proxy_set_header X-Forwarded-Proto https;
 `app.set('trust proxy', 1)` is still needed for `req.ip` / rate-limiting, but it does **not** fix the `issecure` check.
 
 ### Production deployment — MySQL 8 + Prisma auth plugin
-MySQL 8 uses `caching_sha2_password` by default. Prisma's MariaDB adapter fails with an RSA public key error unless you add `?allowPublicKeyRetrieval=true` to the connection string:
+
+MySQL 8 uses `caching_sha2_password` by default. Prisma's MariaDB adapter fails with an RSA public key error on every fresh container start. **Do NOT rely on `?allowPublicKeyRetrieval=true` in the `DATABASE_URL` string** — the adapter is constructed by manually parsing the URL (host/user/password/database/port only), so query parameters are silently ignored.
+
+Pass the option explicitly in `src/config/prisma.ts`:
+```ts
+const adapter = new PrismaMariaDb({
+  host: url.hostname,
+  user: url.username,
+  password: url.password,
+  database: url.pathname.slice(1),
+  port: Number(url.port) || 3306,
+  allowPublicKeyRetrieval: true,   // must be explicit — URL query params are NOT forwarded
+});
 ```
-DATABASE_URL=mysql://user:pass@db:3306/videocall?allowPublicKeyRetrieval=true
-```
-Add this to both `.env` and `docker-compose.prod.yml` environment block.
+
+The symptom of missing this is a pool timeout (`active=0 idle=0 limit=10`) with an RSA public key error buried in `cause.cause`.
 
 ### Production deployment — nginx 1.24 HTTP/2 syntax
 Ubuntu 22.04 ships nginx **1.24.0** which does **not** support the `http2 on;` directive (added in 1.25.1). Use the old inline syntax:
